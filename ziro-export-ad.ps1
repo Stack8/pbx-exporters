@@ -7,8 +7,11 @@ if ($userName){
     $creds = New-Object System.Management.Automation.PSCredential ($userName, $password)
 }
 
+$defaultHostname = Get-ADDomainController | Select-Object HostName
+$defaultHostname = $defaultHostname.hostname
+
 # Provide option to point to a different AD host 
-$hostname =Read-Host "[OPTIONAL]Provide AD server host (ex. active-directory.contoso.com). Leave empty and hit enter to connect to "
+$hostname =Read-Host "[OPTIONAL] Hit Enter to query AD Host [$defaultHostname] or provide a different hostname"
 
 # Prompt for optional AD filter
 $filter =  Read-Host "[OPTIONAL] Provide a filter, (hit enter to skip)"
