@@ -1,0 +1,2 @@
+$Credential = $host.ui.PromptForCredential("Need credentials", "Please enter your Unity Administatior username and password.", "", "NetBiosUserName")
+$UnityHost = Read-Host "Please enter the Unity server URL"
