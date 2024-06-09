@@ -6,8 +6,10 @@ function Execute-GetOnUnity {
         [string]$OutputFileName
     )
 
-    $Url = $UnityHost + $Endpoint + "?rowsPerPage=2000&pageNumber=1"
-    $OutputFilePath = "output/" + $OutputFileName
+    $PageNumber = 1
+
+    $Url = $UnityHost + $Endpoint + "?rowsPerPage=2000&pageNumber=" + $PageNumber
+    $OutputFilePath = "output-unity/" + $OutputFileName
 
     $Headers = @{
         "Accept" = "application/json"
@@ -21,16 +23,16 @@ function Execute-GetOnUnity {
 $Credential = Get-Credential -Message "Insert Unity Username and Password"    
 $UnityHost = Read-Host "Please enter the Unity server URL (ex: https://myunity.com/)"
 
-New-Item -Name "output" -ItemType Directory -Force
-New-Item -Name "output/users" -ItemType Directory -Force
-New-Item -Name "output/callhandlers" -ItemType Directory -Force
-New-Item -Name "output/distributionlists" -ItemType Directory -Force
-New-Item -Name "output/directoryhandlers" -ItemType Directory -Force
-New-Item -Name "output/interviewhandlers" -ItemType Directory -Force
-New-Item -Name "output/routingrules" -ItemType Directory -Force
-New-Item -Name "output/partitions" -ItemType Directory -Force
-New-Item -Name "output/schedules" -ItemType Directory -Force
-New-Item -Name "output/schedulesets" -ItemType Directory -Force
+New-Item -Name "output-unity" -ItemType Directory -Force
+New-Item -Name "output-unity/users" -ItemType Directory -Force
+New-Item -Name "output-unity/callhandlers" -ItemType Directory -Force
+New-Item -Name "output-unity/distributionlists" -ItemType Directory -Force
+New-Item -Name "output-unity/directoryhandlers" -ItemType Directory -Force
+New-Item -Name "output-unity/interviewhandlers" -ItemType Directory -Force
+New-Item -Name "output-unity/routingrules" -ItemType Directory -Force
+New-Item -Name "output-unity/partitions" -ItemType Directory -Force
+New-Item -Name "output-unity/schedules" -ItemType Directory -Force
+New-Item -Name "output-unity/schedulesets" -ItemType Directory -Force
 
 Execute-GetOnUnity $UnityHost 'vmrest/users/' $Credential 'users/list.json'
 Execute-GetOnUnity $UnityHost 'vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json'
@@ -42,5 +44,5 @@ Execute-GetOnUnity $UnityHost 'vmrest/partitions' $Credential 'partitions/list.j
 Execute-GetOnUnity $UnityHost 'vmrest/schedules' $Credential 'schedules/list.json'
 Execute-GetOnUnity $UnityHost 'vmrest/schedulesets' $Credential 'schedulesets/list.json'
 
-Compress-Archive -Path output/* -DestinationPath output.zip -Force
-Remove-Item -Path output -Recurse
+Compress-Archive -Path output-unity/* -DestinationPath output-unity.zip -Force
+Remove-Item -Path output-unity -Recurse
