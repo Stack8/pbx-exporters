@@ -6,7 +6,7 @@ function Execute-GetOnUnity {
         [string]$OutputFileName
     )
 
-    $Url = $UnityHost + $Endpoint
+    $Url = $UnityHost + $Endpoint + "?rowsPerPage=2000&pageNumber=1"
     $OutputFilePath = "output/" + $OutputFileName
 
     $Headers = @{
