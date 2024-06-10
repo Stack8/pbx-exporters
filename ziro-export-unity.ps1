@@ -60,5 +60,7 @@ Execute-GetOnUnity $UnityHost 'vmrest/partitions' $Credential 'partitions/list.j
 Execute-GetOnUnity $UnityHost 'vmrest/schedules' $Credential 'schedules/list.json' 'Schedule'
 Execute-GetOnUnity $UnityHost 'vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet'
 
-Compress-Archive -Path output-unity/* -DestinationPath output-unity.zip -Force
+$ZipFileName = (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + "_" + ([System.Uri]$UnityHost).Host + ".zip"
+
+Compress-Archive -Path output-unity/* -DestinationPath $ZipFileName -Force
 Remove-Item -Path output-unity -Recurse
