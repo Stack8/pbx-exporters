@@ -65,7 +65,15 @@ foreach ($CallHandler in $CallHandlers | ConvertFrom-Json) {
     Execute-GetOnUnity $UnityHost ('vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/callhandlerowners") $Credential ($FolderName + '/callhandlerowners.json') 'CallHandlerOwner'
 }
 
-Execute-GetOnUnity $UnityHost 'vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList'
+$DistributionLists = Execute-GetOnUnity $UnityHost 'vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList'
+
+
+foreach ($DistributionList in $DistributionLists | ConvertFrom-Json) {
+    $FolderName = "distributionlists/" + $DistributionList.ObjectId
+    New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force
+    Execute-GetOnUnity $UnityHost ('vmrest/distributionlists/' + $DistributionList.ObjectId + "/distributionlistmembers") $Credential ($FolderName + '/distributionlistmembers.json') 'DistributionListMember'
+}
+
 Execute-GetOnUnity $UnityHost 'vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler'
 Execute-GetOnUnity $UnityHost 'vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler'
 Execute-GetOnUnity $UnityHost 'vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule'
