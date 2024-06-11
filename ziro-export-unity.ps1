@@ -37,6 +37,8 @@ function Execute-GetOnUnity {
     return $JsonOutput
 }
 
+$Error.Clear()
+
 $Credential = Get-Credential -Message "Insert Unity Username and Password"    
 $UnityHost = Read-Host "Please enter the Unity server URL (ex: https://myunity.com/)"
 
@@ -65,3 +67,11 @@ $ZipFileName = (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + "_" + ([Sys
 
 Compress-Archive -Path output-unity/* -DestinationPath $ZipFileName -Force
 Remove-Item -Path output-unity -Recurse
+
+if ($Error.Count -gt 0) {
+    Write-Host "Something went wrong while running the script." -ForegroundColor Red
+} else {
+    Write-Host "The script ran successfully" -ForegroundColor Green
+}
+
+$Error.Clear()
