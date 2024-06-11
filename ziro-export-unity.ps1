@@ -54,7 +54,17 @@ New-Item -Name "output-unity/schedules" -ItemType Directory -Force
 New-Item -Name "output-unity/schedulesets" -ItemType Directory -Force
 
 Execute-GetOnUnity $UnityHost 'vmrest/users/' $Credential 'users/list.json' 'User'
-Execute-GetOnUnity $UnityHost 'vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler'
+$CallHandlers = Execute-GetOnUnity $UnityHost 'vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler'
+
+foreach ($CallHandler in $CallHandlers | ConvertFrom-Json) {
+    $FolderName = "callhandlers/" + $CallHandler.ObjectId
+    New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force
+    Execute-GetOnUnity $UnityHost ('vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
+    Execute-GetOnUnity $UnityHost ('vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption'
+    Execute-GetOnUnity $UnityHost ('vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry'
+    Execute-GetOnUnity $UnityHost ('vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/callhandlerowners") $Credential ($FolderName + '/callhandlerowners.json') 'CallHandlerOwner'
+}
+
 Execute-GetOnUnity $UnityHost 'vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList'
 Execute-GetOnUnity $UnityHost 'vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler'
 Execute-GetOnUnity $UnityHost 'vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler'
@@ -70,7 +80,8 @@ Remove-Item -Path output-unity -Recurse
 
 if ($Error.Count -gt 0) {
     Write-Host "Something went wrong while running the script." -ForegroundColor Red
-} else {
+}
+else {
     Write-Host "The script ran successfully" -ForegroundColor Green
 }
 
