@@ -34,6 +34,7 @@ function Execute-GetOnUnity {
 
     $JsonOutput = ConvertTo-Json $ResourcesArray
     $JsonOutput | Out-File -FilePath $OutputFilePath
+    return $JsonOutput
 }
 
 $Credential = Get-Credential -Message "Insert Unity Username and Password"    
