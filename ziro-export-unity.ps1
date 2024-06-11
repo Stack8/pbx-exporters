@@ -34,7 +34,7 @@ function Execute-GetOnUnity {
 
     $JsonOutput = ConvertTo-Json $ResourcesArray
     $JsonOutput | Out-File -FilePath $OutputFilePath
-    return $JsonOutput
+    return $JsonOutput | ConvertFrom-Json
 }
 
 $Error.Clear()
@@ -56,7 +56,7 @@ New-Item -Name "output-unity/schedulesets" -ItemType Directory -Force
 Execute-GetOnUnity $UnityHost 'vmrest/users/' $Credential 'users/list.json' 'User'
 $CallHandlers = Execute-GetOnUnity $UnityHost 'vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler'
 
-foreach ($CallHandler in $CallHandlers | ConvertFrom-Json) {
+foreach ($CallHandler in $CallHandlers) {
     $FolderName = "callhandlers/" + $CallHandler.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force
     Execute-GetOnUnity $UnityHost ('vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
@@ -68,18 +68,46 @@ foreach ($CallHandler in $CallHandlers | ConvertFrom-Json) {
 $DistributionLists = Execute-GetOnUnity $UnityHost 'vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList'
 
 
-foreach ($DistributionList in $DistributionLists | ConvertFrom-Json) {
+foreach ($DistributionList in $DistributionLists) {
     $FolderName = "distributionlists/" + $DistributionList.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force
     Execute-GetOnUnity $UnityHost ('vmrest/distributionlists/' + $DistributionList.ObjectId + "/distributionlistmembers") $Credential ($FolderName + '/distributionlistmembers.json') 'DistributionListMember'
 }
 
 Execute-GetOnUnity $UnityHost 'vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler'
-Execute-GetOnUnity $UnityHost 'vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler'
-Execute-GetOnUnity $UnityHost 'vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule'
+
+$InterviewHandlers = Execute-GetOnUnity $UnityHost 'vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler'
+
+foreach ($InterviewHandler in $InterviewHandlers) {
+    $FolderName = "interviewhandlers/" + $InterviewHandler.ObjectId
+    New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force
+    Execute-GetOnUnity $UnityHost ('vmrest/handlers/interviewhandlers/' + $InterviewHandler.ObjectId + "/interviewquestions") $Credential ($FolderName + '/interviewquestions.json') 'InterviewQuestion'
+}
+
+$RoutingRules = Execute-GetOnUnity $UnityHost 'vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule'
+
+foreach ($RoutingRule in $RoutingRules) {
+    $FolderName = "routingrules/" + $RoutingRule.ObjectId
+    New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force
+    Execute-GetOnUnity $UnityHost ('vmrest/routingrules/' + $RoutingRule.ObjectId + "/routingruleconditions") $Credential ($FolderName + '/routingruleconditions.json') 'RoutingruleCondition'
+}
+
 Execute-GetOnUnity $UnityHost 'vmrest/partitions' $Credential 'partitions/list.json' 'Partition'
-Execute-GetOnUnity $UnityHost 'vmrest/schedules' $Credential 'schedules/list.json' 'Schedule'
-Execute-GetOnUnity $UnityHost 'vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet'
+$Schedules = Execute-GetOnUnity $UnityHost 'vmrest/schedules' $Credential 'schedules/list.json' 'Schedule'
+
+foreach ($Schedule in $Schedules) {
+    $FolderName = "schedules/" + $Schedule.ObjectId
+    New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force
+    Execute-GetOnUnity $UnityHost ('vmrest/schedules/' + $Schedule.ObjectId + "/scheduledetails") $Credential ($FolderName + '/scheduledetails.json') 'ScheduleDetail'
+}
+
+$ScheduleSets = Execute-GetOnUnity $UnityHost 'vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet'
+
+foreach ($ScheduleSet in $ScheduleSets) {
+    $FolderName = "schedulesets/" + $ScheduleSet.ObjectId
+    New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force
+    Execute-GetOnUnity $UnityHost ('vmrest/schedulesets/' + $ScheduleSet.ObjectId + "/schedulesetmembers") $Credential ($FolderName + '/schedulesetmembers.json') 'SchedulesetMember'
+}
 
 $ZipFileName = (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + "_" + ([System.Uri]$UnityHost).Host + ".zip"
 
