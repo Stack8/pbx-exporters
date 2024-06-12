@@ -17,9 +17,18 @@ function Execute-GetOnUnity {
     }
 
     $ResourcesArray = @()
+    $Response = $null
+    try {
+        $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential
+    }
+    catch {
+        $ResponseCode = $_.Exception.Response.StatusCode.value__
+        if ($ResponseCode -eq 401 -or $ResponseCode -eq 403) {
+            Write-Host "Wrong credentials or insufficient permissions." -ForegroundColor Red
+            exit 1
+        }
+    }
 
- 
-    $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential
     $Resources = $Response.$ResourceName
     $TotalResources = [int]$Response."@total"
     $ResourcesArray += $Resources
