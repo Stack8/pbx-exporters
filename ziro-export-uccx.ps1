@@ -172,7 +172,7 @@ function Export-Applications([UccxConnector]$Connector, $ExportDirectory) {
         }
         catch
         {
-            Write-Error "Error exporting application with script sarameters for application ${applicationName}: $_"
+            Write-Error "Error exporting application with script parameters for application ${applicationName}: $_"
         }
     }
 
