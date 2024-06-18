@@ -49,6 +49,13 @@ function Execute-GetOnUnity {
 
 $Error.Clear()
 
+# Check powershell version requirement
+$minimumPowershellVersion = [System.Management.Automation.SemanticVersion]::new(7, 0, 0)
+if ($PSVersionTable.PSVersion -lt $minimumPowershellVersion) {
+    Write-Error "This script requires Powershell version ${minimumPowershellVersion} or greater."
+    exit 1
+}
+
 $Credential = Get-Credential -Message "Insert Unity Username and Password"    
 $UnityHost = Read-Host "Please enter the Unity server URL (ex: https://myunity.com/)"
 
