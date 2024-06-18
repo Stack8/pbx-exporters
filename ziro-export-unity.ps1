@@ -56,8 +56,8 @@ if ($PSVersionTable.PSVersion -lt $minimumPowershellVersion) {
     exit 1
 }
 
-$Credential = Get-Credential -Message "Insert Unity Username and Password"    
 $UnityHost = Read-Host "Please enter the Unity server URL (ex: https://myunity.com/)"
+$Credential = Get-Credential -Message "Insert Unity Username and Password"
 
 $ProgressCount = 0
 
