@@ -50,7 +50,7 @@ function Execute-GetOnUnity {
 $Error.Clear()
 
 # Check powershell version requirement
-$minimumPowershellVersion = [System.Management.Automation.SemanticVersion]::new(7, 0, 0)
+$MinimumPowershellVersion = [System.Management.Automation.SemanticVersion]::new(7, 0, 0)
 if ($PSVersionTable.PSVersion -lt $minimumPowershellVersion) {
     Write-Error "This script requires Powershell version ${minimumPowershellVersion} or greater."
     exit 1
