@@ -160,11 +160,14 @@ $ZipFileName = (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + "_" + ([Sys
 Compress-Archive -Path output-unity/* -DestinationPath $ZipFileName -Force 
 Remove-Item -Path output-unity -Recurse 
 
-if ($Error.Count -gt 0) {
+$ScriptRanSuccessfully = $Error.Count -eq 0
+$Error.Clear()
+
+if ($ScriptRanSuccessfully) {
+    Write-Host "The script ran successfully" -ForegroundColor Green
+} 
+else {
     Write-Host "Something went wrong while running the script." -ForegroundColor Red
 }
-else {
-    Write-Host "The script ran successfully" -ForegroundColor Green
-}
 
-$Error.Clear()
+exit !$ScriptRanSuccessfully
