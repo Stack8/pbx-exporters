@@ -1,2 +1,3 @@
 *.zip
 output-unity/
+.DS_Store
