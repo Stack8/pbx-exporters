@@ -251,9 +251,9 @@ $exportDirectory | Remove-Item -Recurse
 
 if ($exportIsSuccessful) {
     Write-Host "UCCX configuration export was successful (${exportDirectory})"
-    exit !$exportIsSuccessful
-
 } else {
     Write-Error 'Ran into errors when exporting UCCX configuration'
-    exit !$exportIsSuccessful
 }
+
+# Need to flip the bool to get the proper exit code
+exit !$exportIsSuccessful
