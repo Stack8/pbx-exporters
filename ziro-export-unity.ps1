@@ -51,8 +51,8 @@ $Error.Clear()
 
 # Check powershell version requirement
 $MinimumPowershellVersion = [System.Management.Automation.SemanticVersion]::new(7, 0, 0)
-if ($PSVersionTable.PSVersion -lt $minimumPowershellVersion) {
-    Write-Error "This script requires Powershell version ${minimumPowershellVersion} or greater."
+if ($PSVersionTable.PSVersion -lt $MinimumPowershellVersion) {
+    Write-Error "This script requires Powershell version ${MinimumPowershellVersion} or greater."
     exit 1
 }
 
