@@ -1,3 +1,5 @@
+#Requires -Version 7.0
+
 class UccxConnector {
     [string] $BaseUrl
     [PSCredential] $Credential
@@ -200,13 +202,6 @@ function Export-AreaCodes([UccxConnector]$Connector, $ExportDirectory) {
     return Export-UccxEntities @parameters
 }
 
-
-# Check powershell version requirement
-$minimumPowershellVersion = [System.Management.Automation.SemanticVersion]::new(7, 0, 0)
-if ($PSVersionTable.PSVersion -lt $minimumPowershellVersion) {
-    Write-Error "This script requires Powershell version ${minimumPowershellVersion} or greater."
-    exit 1
-}
 
 $serverUrl = Read-Host 'UCCX server URL (https://myuccx.company.com)'
 $credential = Get-Credential -Message 'Enter username and password'
