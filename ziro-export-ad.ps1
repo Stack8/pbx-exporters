@@ -1,3 +1,5 @@
+#Requires -Version 7.0
+
 # Display logged in user and provide option to use different credentials
 $loggedInUser = $Env:UserName
 $userName = Read-Host "Running as [$Env:UserName]. Provide a different username or hit ENTER to continue as [$Env:UserName]"
