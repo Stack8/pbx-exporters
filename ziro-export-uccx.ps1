@@ -13,7 +13,7 @@ class UccxConnector {
     }
 
     [PSCustomObject] InvokeGet([string]$Path) {
-        $headers =  @{
+        $headers = @{
             'Accept' = 'application/json'
         }
         $uri = $this.BaseUrl + $Path
@@ -22,14 +22,12 @@ class UccxConnector {
 }
 
 function Export-UccxEntities([UccxConnector]$Connector, [string]$Path, $ExportDirectory, [string]$EntityName) {
-    try 
-    {
+    try {
         $entities = $Connector.InvokeGet($Path)
         $entityDirectory = New-Item -Path $ExportDirectory -Name $EntityName -ItemType Directory
         $entities | ConvertTo-Json -depth 100 | Set-Content -Path "${entityDirectory}/list.json"
     }
-    catch 
-    {
+    catch {
         Write-Error "Error exporting ${EntityName}: $_"
         return $false
     }
@@ -79,34 +77,30 @@ function Export-Csqs([UccxConnector]$Connector, $ExportDirectory) {
 }
 
 function Export-Teams([UccxConnector]$Connector, $ExportDirectory) {
-    try 
-    {
+    try {
         $teams = $Connector.InvokeGet('/adminapi/team')
         $teamsDirectory = New-Item -Path $ExportDirectory -Name 'teams' -ItemType Directory
         $teams | ConvertTo-Json -depth 100 | Set-Content -Path "${teamsDirectory}/list.json"
     }
-    catch 
-    {
+    catch {
         Write-Error "Error exporting teams: $_"
         return $false
     }
 
-    for ($i=0; $i -lt $teams.team.Length; $i++) {
+    for ($i = 0; $i -lt $teams.team.Length; $i++) {
         $progressParameters = @{
-            Activity         = 'Exporting team information...'
-            Status           = "Fetched: $i of $($teams.team.Length)"
-            PercentComplete  = ($i / $teams.team.Length) * 100
+            Activity        = 'Exporting team information...'
+            Status          = "Fetched: $i of $($teams.team.Length)"
+            PercentComplete = ($i / $teams.team.Length) * 100
         }
 
         Write-Progress @progressParameters
 
-        try
-        {
+        try {
             $teamId = $teams.team[$i].teamId
             $Connector.InvokeGet("/adminapi/team/${teamId}") | ConvertTo-Json -depth 100 | Set-Content -Path "${teamsDirectory}/${teamId}.json"
         }
-        catch
-        {
+        catch {
             Write-Error "Error exporting team with teamId=${teamId}: $_"
         }
     }
@@ -146,34 +140,30 @@ function Export-HttpsTriggers([UccxConnector]$Connector, $ExportDirectory) {
 }
 
 function Export-Applications([UccxConnector]$Connector, $ExportDirectory) {
-    try 
-    {
+    try {
         $applications = $Connector.InvokeGet('/adminapi/application')
         $applicationsDirectory = New-Item -Path $ExportDirectory -Name 'applications' -ItemType Directory
         $applications | ConvertTo-Json -depth 100 | Set-Content -Path "${applicationsDirectory}/list.json"
     }
-    catch 
-    {
+    catch {
         Write-Error "Error exporting applications: $_"
         return $false
     }
 
-    for ($i=0; $i -lt $applications.application.Length; $i++) {
+    for ($i = 0; $i -lt $applications.application.Length; $i++) {
         $progressParameters = @{
-            Activity         = 'Exporting application information...'
-            Status           = "Fetched: $i of $($applications.application.Length)"
-            PercentComplete  = ($i / $applications.application.Length) * 100
+            Activity        = 'Exporting application information...'
+            Status          = "Fetched: $i of $($applications.application.Length)"
+            PercentComplete = ($i / $applications.application.Length) * 100
         }
 
         Write-Progress @progressParameters
 
-        try
-        {
+        try {
             $applicationName = $applications.application[$i].applicationName
             $Connector.InvokeGet("/adminapi/application/${applicationName}?allScriptParams") | ConvertTo-Json -depth 100 | Set-Content -Path "${applicationsDirectory}/${applicationName}.json"
         }
-        catch
-        {
+        catch {
             Write-Error "Error exporting application with script parameters for application ${applicationName}: $_"
         }
     }
@@ -208,19 +198,19 @@ $credential = Get-Credential -Message 'Enter username and password'
 $uccxConnector = [UccxConnector]::new($serverUrl, $credential)
 
 # Smoke-test URL and credentials
-try 
-{
+try {
     $allResources = $uccxConnector.InvokeGet('/adminapi/resource')
 }
-catch
-{
+catch {
     $responseCode = $_.Exception.Response.StatusCode.value__
 
     if ($responseCode -eq 401) {
         Write-Error "Invalid credentials (401 Unauthorized): $_"
-    } elseif ($responseCode -eq 403) {
+    }
+    elseif ($responseCode -eq 403) {
         Write-Error "Insufficient permissions (403 Forbidden): $_"
-    } else {
+    }
+    else {
         Write-Error "Error when trying to connect to UCCX server: $_"
     }
 
@@ -253,7 +243,8 @@ $exportDirectory | Remove-Item -Recurse
 
 if ($exportIsSuccessful) {
     Write-Host "UCCX configuration export was successful (${exportDirectory})"
-} else {
+}
+else {
     Write-Error 'Ran into errors when exporting UCCX configuration'
 }
 
