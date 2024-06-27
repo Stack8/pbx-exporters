@@ -12,7 +12,6 @@ function Invoke-GetOnUnity {
     $PageNumber = 1
 
     $Url = $UnityHost + $Endpoint + "?rowsPerPage=2000&pageNumber=" + $PageNumber
-    $OutputFilePath = "output-unity/" + $OutputFileName
 
     $Headers = @{
         "Accept" = "application/json"
@@ -45,7 +44,12 @@ function Invoke-GetOnUnity {
     }
 
     $JsonOutput = ConvertTo-Json $ResourcesArray
-    $JsonOutput | Out-File -FilePath $OutputFilePath
+
+    if ($OutputFileName) {
+        $OutputFilePath = "output-unity/" + $OutputFileName
+        $JsonOutput | Out-File -FilePath $OutputFilePath
+    }
+
     return $JsonOutput | ConvertFrom-Json
 }
 
@@ -60,6 +64,15 @@ function Export-Greetings {
 
         $PlayWhat = [int]$Greeting.PlayWhat
         $Enabled = [System.Convert]::ToBoolean($Greeting.Enabled)
+
+        if ($PlayWhat -eq 1 -and $Enabled -eq $true) {
+            $GreetingStreamFiles = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
+        
+            foreach ($GreetingStreamFile in $GreetingStreamFiles) {
+                Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio") $Credential $null 'GreetingStreamFile'
+            }
+        }
+
         Write-Progress -activity "Getting grettings information for call handler [$CallHandlerId]..." -status "Fetched: $ProgressCount of $($Greetings.Count)" -percentComplete (($ProgressCount / $Greetings.Count) * 100)
     }
     
