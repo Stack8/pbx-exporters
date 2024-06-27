@@ -51,7 +51,8 @@ function Invoke-GetOnUnity {
         }
     
         return $JsonOutput | ConvertFrom-Json
-    } else {
+    }
+    else {
         if ($OutputFileName) {
             $OutputFilePath = "output-unity/" + $OutputFileName
             $Response | Out-File -FilePath $OutputFilePath
