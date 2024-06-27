@@ -31,33 +31,27 @@ function Invoke-GetOnUnity {
         }
     }
 
-    if ($ResourceName) {
+    $Resources = $Response.$ResourceName
+    $TotalResources = [int]$Response."@total"
+    $ResourcesArray += $Resources
+    
+    while ($ResourcesArray.Count -lt $TotalResources) {
+        $PageNumber++
+        $Url = $UnityHost + $Endpoint + "?rowsPerPage=1&pageNumber=" + $PageNumber
+        $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential
         $Resources = $Response.$ResourceName
-        $TotalResources = [int]$Response."@total"
         $ResourcesArray += $Resources
+    }
     
-        while ($ResourcesArray.Count -lt $TotalResources) {
-            $PageNumber++
-            $Url = $UnityHost + $Endpoint + "?rowsPerPage=1&pageNumber=" + $PageNumber
-            $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential
-            $Resources = $Response.$ResourceName
-            $ResourcesArray += $Resources
-        }
-        $JsonOutput = ConvertTo-Json $ResourcesArray
+    $JsonOutput = ConvertTo-Json $ResourcesArray
 
-        if ($OutputFileName) {
-            $OutputFilePath = "output-unity/" + $OutputFileName
-            $JsonOutput | Out-File -FilePath $OutputFilePath
-        }
+    if ($OutputFileName) {
+        $OutputFilePath = "output-unity/" + $OutputFileName
+        $JsonOutput | Out-File -FilePath $OutputFilePath
+    }
     
-        return $JsonOutput | ConvertFrom-Json
-    }
-    else {
-        if ($OutputFileName) {
-            $OutputFilePath = "output-unity/" + $OutputFileName
-            $Response | Out-File -FilePath $OutputFilePath
-        }
-    }
+    return $JsonOutput | ConvertFrom-Json
+
 
 }
 
@@ -78,7 +72,13 @@ function Export-Greetings {
             $GreetingStreamFiles = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
         
             foreach ($GreetingStreamFile in $GreetingStreamFiles) {
-                Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio") $Credential ($FolderName + '/gr_' + $Greeting.GreetingType + "_" + $GreetingStreamFile.LanguageCode + ".wav") $null
+                $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
+
+                $Headers = @{
+                    "Accept" = "application/json"
+                }
+
+                Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential -OutFile ("output-unity/" + $FolderName + '/gr_' + $Greeting.GreetingType + "_" + $GreetingStreamFile.LanguageCode + ".wav")
             }
         }
 
