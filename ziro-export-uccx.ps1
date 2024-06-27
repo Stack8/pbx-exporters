@@ -199,7 +199,7 @@ $uccxConnector = [UccxConnector]::new($serverUrl, $credential)
 
 # Smoke-test URL and credentials
 try {
-    $allResources = $uccxConnector.InvokeGet('/adminapi/resource')
+    $uccxConnector.InvokeGet('/adminapi/resource')
 }
 catch {
     $responseCode = $_.Exception.Response.StatusCode.value__
