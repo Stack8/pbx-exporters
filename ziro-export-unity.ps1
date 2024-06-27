@@ -57,6 +57,9 @@ function Export-Greetings {
     $ProgressCount = 0
     foreach ($Greeting in $Greetings) {
         $ProgressCount++
+
+        $PlayWhat = [int]$Greeting.PlayWhat
+        $Enabled = [System.Convert]::ToBoolean($Greeting.Enabled)
         Write-Progress -activity "Getting grettings information for call handler [$CallHandlerId]..." -status "Fetched: $ProgressCount of $($Greetings.Count)" -percentComplete (($ProgressCount / $Greetings.Count) * 100)
     }
     
