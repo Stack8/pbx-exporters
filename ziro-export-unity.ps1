@@ -56,7 +56,8 @@ function Invoke-GetOnUnity {
 function Export-Greetings {
     param (
         $Greetings,
-        [string]$CallHandlerId
+        [string]$CallHandlerId,
+        [string]$FolderName
     ) 
     $ProgressCount = 0
     foreach ($Greeting in $Greetings) {
@@ -69,7 +70,7 @@ function Export-Greetings {
             $GreetingStreamFiles = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
         
             foreach ($GreetingStreamFile in $GreetingStreamFiles) {
-                Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio") $Credential $null 'GreetingStreamFile'
+                Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio") $Credential ($FolderName + 'gr_' + $Greeting.GreetingType + "_" + $GreetingStreamFile.LanguageCode + ".wav") $null
             }
         }
 
@@ -107,7 +108,7 @@ foreach ($CallHandler in $CallHandlers) {
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
     $Greetings = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
     
-    Export-Greetings $Greetings $CallHandler.ObjectId
+    Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
     
     Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption' | Out-Null
     Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry' | Out-Null
