@@ -49,12 +49,17 @@ function Invoke-GetOnUnity {
     return $JsonOutput | ConvertFrom-Json
 }
 
-function Export-Greetings($Greetings) {
+function Export-Greetings {
+    param (
+        $Greetings,
+        [string]$CallHandlerId
+    ) 
     $ProgressCount = 0
     foreach ($Greeting in $Greetings) {
         $ProgressCount++
-        Write-Progress -activity "Getting grettings information..." -status "Fetched: $ProgressCount of $($Greetings.Count)" -percentComplete (($ProgressCount / $Greetings.Count) * 100)
+        Write-Progress -activity "Getting grettings information for call handler [$CallHandlerId]..." -status "Fetched: $ProgressCount of $($Greetings.Count)" -percentComplete (($ProgressCount / $Greetings.Count) * 100)
     }
+    
 }
 
 $Error.Clear()
@@ -84,9 +89,9 @@ Write-Output "Finished getting call handlers"
 foreach ($CallHandler in $CallHandlers) {
     $FolderName = "callhandlers/" + $CallHandler.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-    $Greetings = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting' | Out-Null
+    $Greetings = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
     
-    Export-Greetings $Greetings
+    Export-Greetings $Greetings $CallHandler.ObjectId
     
     Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption' | Out-Null
     Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry' | Out-Null
