@@ -116,7 +116,11 @@ foreach ($CallHandler in $CallHandlers) {
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
     $Greetings = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
     
-    Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
+    $IsPrimary = [System.Convert]::ToBoolean($CallHandler.IsPrimary)
+
+    if ($IsPrimary -eq $false) {
+        Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
+    }
     
     Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption' | Out-Null
     Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry' | Out-Null
