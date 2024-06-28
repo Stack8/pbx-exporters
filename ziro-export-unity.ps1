@@ -1,6 +1,6 @@
 #Requires -Version 7.0
 
-function Execute-GetOnUnity {
+function Invoke-GetOnUnity {
     param (
         [string]$UnityHost,
         [string]$Endpoint,
@@ -12,7 +12,6 @@ function Execute-GetOnUnity {
     $PageNumber = 1
 
     $Url = $UnityHost + $Endpoint + "?rowsPerPage=2000&pageNumber=" + $PageNumber
-    $OutputFilePath = "output-unity/" + $OutputFileName
 
     $Headers = @{
         "Accept" = "application/json"
@@ -43,10 +42,49 @@ function Execute-GetOnUnity {
         $Resources = $Response.$ResourceName
         $ResourcesArray += $Resources
     }
-
+    
     $JsonOutput = ConvertTo-Json $ResourcesArray
-    $JsonOutput | Out-File -FilePath $OutputFilePath
+
+    if ($OutputFileName) {
+        $OutputFilePath = "output-unity/" + $OutputFileName
+        $JsonOutput | Out-File -FilePath $OutputFilePath
+    }
+    
     return $JsonOutput | ConvertFrom-Json
+
+
+}
+
+function Export-Greetings {
+    param (
+        $Greetings,
+        [string]$CallHandlerId,
+        [string]$FolderName
+    ) 
+    $ProgressCount = 0
+    foreach ($Greeting in $Greetings) {
+        $ProgressCount++
+
+        $PlayWhat = [int]$Greeting.PlayWhat
+        $Enabled = [System.Convert]::ToBoolean($Greeting.Enabled)
+
+        if ($PlayWhat -eq 1 -and $Enabled -eq $true) {
+            $GreetingStreamFiles = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
+        
+            foreach ($GreetingStreamFile in $GreetingStreamFiles) {
+                $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
+
+                $Headers = @{
+                    "Accept" = "application/json"
+                }
+
+                Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential -OutFile ("output-unity/" + $FolderName + '/gr_' + $Greeting.GreetingType + "_" + $GreetingStreamFile.LanguageCode + ".wav")
+            }
+        }
+
+        Write-Progress -activity "Getting greetings information for call handler [$CallHandlerId]..." -status "Fetched: $ProgressCount of $($Greetings.Count)" -percentComplete (($ProgressCount / $Greetings.Count) * 100)
+    }
+    
 }
 
 $Error.Clear()
@@ -67,85 +105,93 @@ New-Item -Name "output-unity/partitions" -ItemType Directory -Force | Out-Null
 New-Item -Name "output-unity/schedules" -ItemType Directory -Force | Out-Null
 New-Item -Name "output-unity/schedulesets" -ItemType Directory -Force | Out-Null
 
-Execute-GetOnUnity $UnityHost '/vmrest/users/' $Credential 'users/list.json' 'User' | Out-Null
+Invoke-GetOnUnity $UnityHost '/vmrest/users/' $Credential 'users/list.json' 'User' | Out-Null
 Write-Output "Finished getting users"
 
-$CallHandlers = Execute-GetOnUnity $UnityHost '/vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler'
+$CallHandlers = Invoke-GetOnUnity $UnityHost '/vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler'
 Write-Output "Finished getting call handlers"
 
 foreach ($CallHandler in $CallHandlers) {
     $FolderName = "callhandlers/" + $CallHandler.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-    Execute-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting' | Out-Null
-    Execute-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption' | Out-Null
-    Execute-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry' | Out-Null
-    Execute-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/callhandlerowners") $Credential ($FolderName + '/callhandlerowners.json') 'CallHandlerOwner' | Out-Null
+    $Greetings = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
+    
+    $IsPrimary = [System.Convert]::ToBoolean($CallHandler.IsPrimary)
+
+    if ($IsPrimary -eq $false) {
+        Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
+    }
+    
+    Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption' | Out-Null
+    Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry' | Out-Null
+    Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/callhandlerowners") $Credential ($FolderName + '/callhandlerowners.json') 'CallHandlerOwner' | Out-Null
+    
     $ProgressCount++
     Write-Progress -activity "Getting call handlers information..." -status "Fetched: $ProgressCount of $($CallHandlers.Count)" -percentComplete (($ProgressCount / $CallHandlers.Count) * 100)
 }
 $ProgressCount = 0
 
-$DistributionLists = Execute-GetOnUnity $UnityHost '/vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList' 
+$DistributionLists = Invoke-GetOnUnity $UnityHost '/vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList' 
 Write-Output "Finished getting distribution lists"
 
 foreach ($DistributionList in $DistributionLists) {
     $FolderName = "distributionlists/" + $DistributionList.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-    Execute-GetOnUnity $UnityHost ('/vmrest/distributionlists/' + $DistributionList.ObjectId + "/distributionlistmembers") $Credential ($FolderName + '/distributionlistmembers.json') 'DistributionListMember' | Out-Null
+    Invoke-GetOnUnity $UnityHost ('/vmrest/distributionlists/' + $DistributionList.ObjectId + "/distributionlistmembers") $Credential ($FolderName + '/distributionlistmembers.json') 'DistributionListMember' | Out-Null
     $ProgressCount++
     Write-Progress -activity "Getting distribution lists information..." -status "Fetched: $ProgressCount of $($DistributionLists.Count)" -percentComplete (($ProgressCount / $DistributionLists.Count) * 100)
 }
 $ProgressCount = 0
 
-Execute-GetOnUnity $UnityHost '/vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler' | Out-Null
+Invoke-GetOnUnity $UnityHost '/vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler' | Out-Null
 Write-Output "Finished getting directory handlers"
 
-$InterviewHandlers = Execute-GetOnUnity $UnityHost '/vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler' 
+$InterviewHandlers = Invoke-GetOnUnity $UnityHost '/vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler' 
 Write-Output "Finished getting interview handlers"
 
 foreach ($InterviewHandler in $InterviewHandlers) {
     $FolderName = "interviewhandlers/" + $InterviewHandler.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-    Execute-GetOnUnity $UnityHost ('/vmrest/handlers/interviewhandlers/' + $InterviewHandler.ObjectId + "/interviewquestions") $Credential ($FolderName + '/interviewquestions.json') 'InterviewQuestion' | Out-Null
+    Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/interviewhandlers/' + $InterviewHandler.ObjectId + "/interviewquestions") $Credential ($FolderName + '/interviewquestions.json') 'InterviewQuestion' | Out-Null
     $ProgressCount++
     Write-Progress -activity "Getting interview handlers information..." -status "Fetched: $ProgressCount of $($InterviewHandlers.Count)" -percentComplete (($ProgressCount / $InterviewHandlers.Count) * 100)
 }
 $ProgressCount = 0
 
-$RoutingRules = Execute-GetOnUnity $UnityHost '/vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule' 
+$RoutingRules = Invoke-GetOnUnity $UnityHost '/vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule' 
 Write-Output "Finished getting routing rules"
 
 foreach ($RoutingRule in $RoutingRules) {
     $FolderName = "routingrules/" + $RoutingRule.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-    Execute-GetOnUnity $UnityHost ('/vmrest/routingrules/' + $RoutingRule.ObjectId + "/routingruleconditions") $Credential ($FolderName + '/routingruleconditions.json') 'RoutingruleCondition' | Out-Null
+    Invoke-GetOnUnity $UnityHost ('/vmrest/routingrules/' + $RoutingRule.ObjectId + "/routingruleconditions") $Credential ($FolderName + '/routingruleconditions.json') 'RoutingruleCondition' | Out-Null
     $ProgressCount++
     Write-Progress -activity "Getting routing rules information..." -status "Fetched: $ProgressCount of $($RoutingRules.Count)" -percentComplete (($ProgressCount / $RoutingRules.Count) * 100)
 }
 $ProgressCount = 0
 
-Execute-GetOnUnity $UnityHost '/vmrest/partitions' $Credential 'partitions/list.json' 'Partition' | Out-Null
+Invoke-GetOnUnity $UnityHost '/vmrest/partitions' $Credential 'partitions/list.json' 'Partition' | Out-Null
 Write-Output "Finished getting partitions"
 
-$Schedules = Execute-GetOnUnity $UnityHost '/vmrest/schedules' $Credential 'schedules/list.json' 'Schedule' 
+$Schedules = Invoke-GetOnUnity $UnityHost '/vmrest/schedules' $Credential 'schedules/list.json' 'Schedule' 
 Write-Output "Finished getting schedules"
 
 foreach ($Schedule in $Schedules) {
     $FolderName = "schedules/" + $Schedule.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-    Execute-GetOnUnity $UnityHost ('/vmrest/schedules/' + $Schedule.ObjectId + "/scheduledetails") $Credential ($FolderName + '/scheduledetails.json') 'ScheduleDetail' | Out-Null
+    Invoke-GetOnUnity $UnityHost ('/vmrest/schedules/' + $Schedule.ObjectId + "/scheduledetails") $Credential ($FolderName + '/scheduledetails.json') 'ScheduleDetail' | Out-Null
     $ProgressCount++
     Write-Progress -activity "Getting schedules information..." -status "Fetched: $ProgressCount of $($Schedules.Count)" -percentComplete (($ProgressCount / $Schedules.Count) * 100)
 }
 $ProgressCount = 0
 
-$ScheduleSets = Execute-GetOnUnity $UnityHost '/vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet' 
+$ScheduleSets = Invoke-GetOnUnity $UnityHost '/vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet' 
 Write-Output "Finished getting schedule sets"
 
 foreach ($ScheduleSet in $ScheduleSets) {
     $FolderName = "schedulesets/" + $ScheduleSet.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-    Execute-GetOnUnity $UnityHost ('/vmrest/schedulesets/' + $ScheduleSet.ObjectId + "/schedulesetmembers") $Credential ($FolderName + '/schedulesetmembers.json') 'SchedulesetMember' | Out-Null
+    Invoke-GetOnUnity $UnityHost ('/vmrest/schedulesets/' + $ScheduleSet.ObjectId + "/schedulesetmembers") $Credential ($FolderName + '/schedulesetmembers.json') 'SchedulesetMember' | Out-Null
     $ProgressCount++
     Write-Progress -activity "Getting schedule sets information..." -status "Fetched: $ProgressCount of $($ScheduleSets.Count)" -percentComplete (($ProgressCount / $ScheduleSets.Count) * 100)
 }
