@@ -41,6 +41,7 @@ class CucmConnector {
    }
    
    [System.Xml.XmlDocument] SelectCmDevice([string[]]$DeviceNames) {
+      Write-Host $DeviceNames
       $uri = "{0}/realtimeservice2/services/RISService70" -f $this.BaseUrl
       $headers = @{
          'Content-Type' = 'text/xml; charset=UTF-8'
@@ -183,13 +184,13 @@ catch {
    $responseCode = $_.Exception.Response.StatusCode.value__
 
    if ($responseCode -eq 401) {
-       Write-Error "Invalid credentials (401 Unauthorized): $_"
+      Write-Error "Invalid credentials (401 Unauthorized): $_"
    }
    elseif ($responseCode -eq 403) {
-       Write-Error "Insufficient permissions (403 Forbidden): $_"
+      Write-Error "Insufficient permissions (403 Forbidden): $_"
    }
    else {
-       Write-Error "Ran into errors when exporting RISport information: $_"
+      Write-Error "Ran into errors when exporting RISport information: $_"
    }
 
    exit 1
