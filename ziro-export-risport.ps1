@@ -87,7 +87,7 @@ function Get-DeviceNames {
 
    $allDeviceNames = New-Object System.Collections.Generic.HashSet[string]
    $skip = 0
-   $first = 1
+   $first = 2000
    $response = $CucmConnector.ListPhone($skip, $first)
    
    while (!($response.GetElementsByTagName('return').IsEmpty)) {
