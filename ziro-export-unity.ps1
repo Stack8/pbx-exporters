@@ -69,10 +69,10 @@ function Export-Greetings {
         $Enabled = [System.Convert]::ToBoolean($Greeting.Enabled)
 
         if ($PlayWhat -eq 1 -and $Enabled -eq $true) {
-            $GreetingStreamFiles = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
+            $GreetingStreamFiles = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
         
             foreach ($GreetingStreamFile in $GreetingStreamFiles) {
-                $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
+                $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
 
                 $Headers = @{
                     "Accept" = "application/json"
