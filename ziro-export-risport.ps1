@@ -160,7 +160,6 @@ function Get-DeviceRegistrationStatuses {
          }
       }
 
-      # Upper bound of range made using the '..' operator is inclusive. so we need an additional increment
       $windowStartIndex = $windowStartIndex + $maxReturnedDevices
       Start-Sleep -Seconds 1  # a pinch of throttling to help with rate limits
    }
