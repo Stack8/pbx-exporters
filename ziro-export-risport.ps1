@@ -75,8 +75,30 @@ class CucmConnector {
          </soapenv:Body>
       </soapenv:Envelope>
 "@
+      
+      $maxNumAttemptsForRateLimitError = 7
 
-      return Invoke-RestMethod -Method 'Post' -Authentication Basic -Credential $this.Credential -Headers $headers -Uri $uri -Body $requestBody -SkipCertificateCheck
+      for ($attempt = 0; $attempt -lt $maxNumAttemptsForRateLimitError; $attempt++) {
+         try {
+            return Invoke-RestMethod -Method 'Post' -Authentication Basic -Credential $this.Credential -Headers $headers -Uri $uri -Body $requestBody -SkipCertificateCheck
+         } catch [Microsoft.PowerShell.Commands.HttpResponseException] {
+            # Handle rate limit errors
+            if ($PSItem.ErrorDetails.Message.Contains('Exceeded allowed rate for Rea')) {
+               if ($attempt -lt $maxNumAttemptsForRateLimitError) {
+                  Write-Host "Encountered rate limit error when getting device registration statuses [attempt=${attempt}]. Retrying in 10 sec..."
+                  Start-Sleep -Seconds 10
+                  continue
+               } else {
+                  Write-Error "Reached max. attempts ${maxNumAttemptsForRateLimitError} for rate limit error when getting device registration statuses"
+                  throw
+               }
+            }
+
+            throw
+         }
+      }
+
+      throw "An unexpected error occured when getting device registration statuses"
    }
 }
 
@@ -129,7 +151,8 @@ function Get-DeviceRegistrationStatuses {
       }
 
       # Upper bound of range made using the '..' operator is inclusive. so we need an additional increment
-      $windowStartIndex = $windowStartIndex + $maxReturnedDevices + 1  
+      $windowStartIndex = $windowStartIndex + $maxReturnedDevices + 1
+      Start-Sleep -Seconds 1  # a pinch of throttling to help with rate limits
    }
 
    return $registrationStatuses
