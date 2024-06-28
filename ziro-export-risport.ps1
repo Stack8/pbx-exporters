@@ -78,7 +78,7 @@ class CucmConnector {
       
       $maxNumAttemptsForRateLimitError = 7
 
-      for ($attempt = 0; $attempt -lt $maxNumAttemptsForRateLimitError; $attempt++) {
+      for ($attempt = 1; $attempt -le $maxNumAttemptsForRateLimitError; $attempt++) {
          try {
             return Invoke-RestMethod -Method 'Post' -Authentication Basic -Credential $this.Credential -Headers $headers -Uri $uri -Body $requestBody -SkipCertificateCheck
          } catch [Microsoft.PowerShell.Commands.HttpResponseException] {
@@ -89,7 +89,7 @@ class CucmConnector {
                   Start-Sleep -Seconds 10
                   continue
                } else {
-                  Write-Error "Reached max. attempts ${maxNumAttemptsForRateLimitError} for rate limit error when getting device registration statuses"
+                  Write-Host -ForegroundColor Red "Reached max. attempts ${maxNumAttemptsForRateLimitError} for rate limit error when getting device registration statuses"
                   throw
                }
             }
