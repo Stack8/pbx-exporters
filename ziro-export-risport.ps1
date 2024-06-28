@@ -189,7 +189,7 @@ catch {
        Write-Error "Insufficient permissions (403 Forbidden): $_"
    }
    else {
-       Write-Error "Error when trying to connect to CUCM server: $_"
+       Write-Error "Ran into errors when exporting RISport information: $_"
    }
 
    exit 1
@@ -198,5 +198,7 @@ catch {
 # Export to JSON file
 $serverHost = ([System.Uri]$serverUrl).Host
 $date = (Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').ToString()
-$outputFileName = "${date}_${serverHost}"
-$registrationStatuses | ConvertTo-Json -depth 100 | Set-Content -Path "${outputFileName}.json"
+$outputFileName = "${date}_${serverHost}.json"
+$outputFile = $registrationStatuses | ConvertTo-Json -depth 100 | New-Item -Path . -Name $outputFileName -ItemType File
+Write-Host "RISport information export was successful: $outputFile"
+exit 0
