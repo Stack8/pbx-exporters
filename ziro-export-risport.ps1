@@ -136,6 +136,14 @@ function Get-DeviceRegistrationStatuses {
    $windowStartIndex = 0
 
    while ($windowStartIndex -lt $DeviceNames.Length) {
+      $progressParameters = @{
+         Activity        = 'Fetching device registrations statuses...'
+         Status          = "Fetched: $windowStartIndex of $($DeviceNames.Length)"
+         PercentComplete = ($windowStartIndex / $DeviceNames.Length) * 100
+      }
+
+      Write-Progress @progressParameters
+
       $windowEndIndex = $windowStartIndex + $maxReturnedDevices
       # powershell doesn't throw an out-of-bounds error when accessing an index that is past the end of array
       $devicesToQuery = $DeviceNames[$windowStartIndex..$windowEndIndex]  
