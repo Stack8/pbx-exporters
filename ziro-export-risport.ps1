@@ -41,7 +41,6 @@ class CucmConnector {
    }
    
    [System.Xml.XmlDocument] SelectCmDevice([string[]]$DeviceNames) {
-      Write-Host $DeviceNames
       $uri = "{0}/realtimeservice2/services/RISService70" -f $this.BaseUrl
       $headers = @{
          'Content-Type' = 'text/xml; charset=UTF-8'
