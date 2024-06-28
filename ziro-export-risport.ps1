@@ -81,14 +81,16 @@ class CucmConnector {
       for ($attempt = 1; $attempt -le $maxNumAttemptsForRateLimitError; $attempt++) {
          try {
             return Invoke-RestMethod -Method 'Post' -Authentication Basic -Credential $this.Credential -Headers $headers -Uri $uri -Body $requestBody -SkipCertificateCheck
-         } catch [Microsoft.PowerShell.Commands.HttpResponseException] {
+         }
+         catch [Microsoft.PowerShell.Commands.HttpResponseException] {
             # Handle rate limit errors
             if ($PSItem.ErrorDetails.Message.Contains('Exceeded allowed rate for Rea')) {
                if ($attempt -lt $maxNumAttemptsForRateLimitError) {
                   Write-Host "Encountered rate limit error when getting device registration statuses [attempt=${attempt}]. Retrying in 10 sec..."
                   Start-Sleep -Seconds 10
                   continue
-               } else {
+               }
+               else {
                   Write-Host -ForegroundColor Red "Reached max. attempts ${maxNumAttemptsForRateLimitError} for rate limit error when getting device registration statuses"
                   throw
                }
