@@ -164,9 +164,28 @@ function Get-DeviceRegistrationStatuses {
 $serverUrl = Read-Host 'CUCM server URL (https://mycucm.company.com)'
 $credential = Get-Credential -Message 'Enter username and password'
 
-$cucmConnector = [CucmConnector]::new($serverUrl, $credential)
-$deviceNames = Get-DeviceNames -CucmConnector $cucmConnector
-$registrationStatuses = Get-DeviceRegistrationStatuses -DeviceNames $deviceNames -CucmConnector $cucmConnector
+$cucmConnector = [CucmConnector]::new($serverUrl, $credential) 
+
+try {
+   $deviceNames = Get-DeviceNames -CucmConnector $cucmConnector
+   Write-Host "Found $($deviceNames.Length) devices"
+   $registrationStatuses = Get-DeviceRegistrationStatuses -DeviceNames $deviceNames -CucmConnector $cucmConnector
+}
+catch {
+   $responseCode = $_.Exception.Response.StatusCode.value__
+
+   if ($responseCode -eq 401) {
+       Write-Error "Invalid credentials (401 Unauthorized): $_"
+   }
+   elseif ($responseCode -eq 403) {
+       Write-Error "Insufficient permissions (403 Forbidden): $_"
+   }
+   else {
+       Write-Error "Error when trying to connect to CUCM server: $_"
+   }
+
+   exit 1
+}
 
 # Export to JSON file
 $serverHost = ([System.Uri]$serverUrl).Host
