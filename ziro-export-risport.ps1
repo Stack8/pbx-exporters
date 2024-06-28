@@ -144,9 +144,9 @@ function Get-DeviceRegistrationStatuses {
 
       Write-Progress @progressParameters
 
-      $windowEndIndex = $windowStartIndex + $maxReturnedDevices
+      $windowEndIndex = $windowStartIndex + $maxReturnedDevices - 1
       # powershell doesn't throw an out-of-bounds error when accessing an index that is past the end of array
-      $devicesToQuery = $DeviceNames[$windowStartIndex..$windowEndIndex]  
+      $devicesToQuery = $DeviceNames[$windowStartIndex..$windowEndIndex]  # upper bound is inclusive
       $response = $CucmConnector.SelectCmDevice($devicesToQuery)
       $totalDevicesFound = $response.Envelope.Body.selectCmDeviceResponse.selectCmDeviceReturn.SelectCmDeviceResult.TotalDevicesFound
 
@@ -161,7 +161,7 @@ function Get-DeviceRegistrationStatuses {
       }
 
       # Upper bound of range made using the '..' operator is inclusive. so we need an additional increment
-      $windowStartIndex = $windowStartIndex + $maxReturnedDevices + 1
+      $windowStartIndex = $windowStartIndex + $maxReturnedDevices
       Start-Sleep -Seconds 1  # a pinch of throttling to help with rate limits
    }
 
