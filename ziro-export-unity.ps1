@@ -82,7 +82,7 @@ function Export-Greetings {
             }
         }
 
-        Write-Progress -activity "Getting grettings information for call handler [$CallHandlerId]..." -status "Fetched: $ProgressCount of $($Greetings.Count)" -percentComplete (($ProgressCount / $Greetings.Count) * 100)
+        Write-Progress -activity "Getting greetings information for call handler [$CallHandlerId]..." -status "Fetched: $ProgressCount of $($Greetings.Count)" -percentComplete (($ProgressCount / $Greetings.Count) * 100)
     }
     
 }
