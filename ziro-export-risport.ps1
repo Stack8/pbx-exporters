@@ -156,7 +156,7 @@ function Get-DeviceRegistrationStatuses {
 
          foreach ($nodeDevices in $devicesPerNode) {
             $formattedDeviceStatuses = [object[]]($nodeDevices.item | Select-Object -Property Name, Status, StatusReason, TimeStamp)
-            $formattedDeviceStatuses | ForEach-Object {$registrationStatuses.Add($_.Name, $_)}
+            $formattedDeviceStatuses | ForEach-Object { $registrationStatuses.Add($_.Name, $_) }
          }
       }
 
@@ -182,20 +182,21 @@ try {
       if ($registrationStatuses.ContainsKey($device.name)) {
          $matchingStatus = $registrationStatuses[$device.name]
          $exportResults.Add(@{
-            Name     = $device.name
-            Status   = $matchingStatus.Status
-            StatusReason    = $matchingStatus.StatusReason
-            TimeStamp = $matchingStatus.TimeStamp
-            Model = $device.model
-         })
-      } else {
+               Name         = $device.name
+               Status       = $matchingStatus.Status
+               StatusReason = $matchingStatus.StatusReason
+               TimeStamp    = $matchingStatus.TimeStamp
+               Model        = $device.model
+            })
+      }
+      else {
          $exportResults.Add(@{
-            Name     = $device.name
-            Status   = "Unknown"
-            StatusReason    = ""
-            TimeStamp = ""
-            Model = $device.model
-         })
+               Name         = $device.name
+               Status       = "Unknown"
+               StatusReason = ""
+               TimeStamp    = ""
+               Model        = $device.model
+            })
       }
    }
 

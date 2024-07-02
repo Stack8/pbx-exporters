@@ -1,0 +1,37 @@
+[
+  {
+    "Model": "Cisco 8851",
+    "StatusReason": "0",
+    "Status": "Registered",
+    "TimeStamp": "1719895921",
+    "Name": "SEP0CD0F84A6730"
+  },
+  {
+    "Model": "Cisco 8851",
+    "StatusReason": "0",
+    "Status": "Registered",
+    "TimeStamp": "1719918283",
+    "Name": "SEP2C31246DF824"
+  },
+  {
+    "Model": "Cisco 8851",
+    "StatusReason": "0",
+    "Status": "Registered",
+    "TimeStamp": "1719895920",
+    "Name": "SEP700B4F9DAEE6"
+  },
+  {
+    "Model": "Cisco 8851",
+    "StatusReason": "",
+    "Status": "Unknown",
+    "TimeStamp": "",
+    "Name": "SEPDD1168371494"
+  },
+  {
+    "Model": "Cisco 8851",
+    "StatusReason": "",
+    "Status": "Unknown",
+    "TimeStamp": "",
+    "Name": "SEPDD5913270178"
+  }
+]
