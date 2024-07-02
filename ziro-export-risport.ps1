@@ -29,6 +29,7 @@ class CucmConnector {
                </searchCriteria>
                <returnedTags>
                   <name></name>
+                  <model></model>
                </returnedTags>
                <skip>${Skip}</skip>
                <first>${First}</first>
@@ -104,24 +105,24 @@ class CucmConnector {
    }
 }
 
-function Get-DeviceNames {
+function Get-Devices {
    param (
       [CucmConnector]$CucmConnector
    )
 
-   $allDeviceNames = New-Object System.Collections.Generic.HashSet[string]
+   $allDevices = New-Object System.Collections.Generic.List[object]
    $skip = 0
    $first = 2000
    $response = $CucmConnector.ListPhone($skip, $first)
    
    while (!($response.GetElementsByTagName('return').IsEmpty)) {
-      $pageDeviceNames = [string[]]($response.GetElementsByTagName('return').phone.name)
-      $allDeviceNames.UnionWith($pageDeviceNames)
+      $pageDevices = [object[]]($response.GetElementsByTagName('return').phone)
+      $allDevices.AddRange($pageDevices)
       $skip += $first
       $response = $CucmConnector.ListPhone($skip, $first)
    }
 
-   return $allDeviceNames
+   return $allDevices
 }
 
 function Get-DeviceRegistrationStatuses {
@@ -130,8 +131,7 @@ function Get-DeviceRegistrationStatuses {
       [CucmConnector]$CucmConnector
    )
 
-   $registrationStatuses = [System.Collections.Generic.List[object]]::new()
-
+   $registrationStatuses = @{}
    $maxReturnedDevices = 2000  # The endpoint allows querying a max of 2000 devices at a time
    $windowStartIndex = 0
 
@@ -155,8 +155,8 @@ function Get-DeviceRegistrationStatuses {
          | Where-Object { $_.HasChildNodes }
 
          foreach ($nodeDevices in $devicesPerNode) {
-            $formattedDeviceStatuses = [object[]]($nodeDevices.item | Select-Object -Property Name, Status, StatusReason, TimeStamp, Model)
-            $registrationStatuses.AddRange($formattedDeviceStatuses)
+            $formattedDeviceStatuses = [object[]]($nodeDevices.item | Select-Object -Property Name, Status, StatusReason, TimeStamp)
+            $formattedDeviceStatuses | ForEach-Object {$registrationStatuses.Add($_.Name, $_)}
          }
       }
 
@@ -170,13 +170,42 @@ function Get-DeviceRegistrationStatuses {
 
 $serverUrl = Read-Host 'CUCM server URL (https://mycucm.company.com)'
 $credential = Get-Credential -Message 'Enter username and password'
-
 $cucmConnector = [CucmConnector]::new($serverUrl, $credential) 
 
 try {
-   $deviceNames = Get-DeviceNames -CucmConnector $cucmConnector
-   Write-Host "Found $($deviceNames.Length) devices"
-   $registrationStatuses = Get-DeviceRegistrationStatuses -DeviceNames $deviceNames -CucmConnector $cucmConnector
+   $devices = Get-Devices -CucmConnector $cucmConnector
+   Write-Host "Found $($devices.Length) devices"
+   $registrationStatuses = Get-DeviceRegistrationStatuses -DeviceNames $devices.name -CucmConnector $cucmConnector
+   $exportResults = New-Object System.Collections.Generic.List[Hashtable]
+
+   foreach ($device in $devices) {
+      if ($registrationStatuses.ContainsKey($device.name)) {
+         $matchingStatus = $registrationStatuses[$device.name]
+         $exportResults.Add(@{
+            Name     = $device.name
+            Status   = $matchingStatus.Status
+            StatusReason    = $matchingStatus.StatusReason
+            TimeStamp = $matchingStatus.TimeStamp
+            Model = $device.model
+         })
+      } else {
+         $exportResults.Add(@{
+            Name     = $device.name
+            Status   = "Unknown"
+            StatusReason    = ""
+            TimeStamp = ""
+            Model = $device.model
+         })
+      }
+   }
+
+   # Export to JSON file
+   $serverHost = ([System.Uri]$serverUrl).Host
+   $date = (Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').ToString()
+   $outputFileName = "${date}_${serverHost}.json"
+   $outputFile = $exportResults | ConvertTo-Json -depth 100 -AsArray | New-Item -Path . -Name $outputFileName -ItemType File
+   Write-Host "RISport information export was successful: $outputFile"
+   exit 0
 }
 catch {
    $responseCode = $_.Exception.Response.StatusCode.value__
@@ -193,11 +222,3 @@ catch {
 
    exit 1
 }
-
-# Export to JSON file
-$serverHost = ([System.Uri]$serverUrl).Host
-$date = (Get-Date -Format 'yyyy-MM-dd_HH-mm-ss').ToString()
-$outputFileName = "${date}_${serverHost}.json"
-$outputFile = $registrationStatuses | ConvertTo-Json -depth 100 | New-Item -Path . -Name $outputFileName -ItemType File
-Write-Host "RISport information export was successful: $outputFile"
-exit 0
