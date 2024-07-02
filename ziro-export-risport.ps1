@@ -173,8 +173,10 @@ $credential = Get-Credential -Message 'Enter username and password'
 $cucmConnector = [CucmConnector]::new($serverUrl, $credential) 
 
 try {
+   Write-Host "Fetching devices from CUCM server..."
    $devices = Get-Devices -CucmConnector $cucmConnector
-   Write-Host "Found $($devices.Length) devices"
+   Write-Host "Found [$($devices.Length)] devices"
+   Write-Host "Getting device registration statuses..."
    $registrationStatuses = Get-DeviceRegistrationStatuses -DeviceNames $devices.name -CucmConnector $cucmConnector
    $exportResults = New-Object System.Collections.Generic.List[Hashtable]
 
