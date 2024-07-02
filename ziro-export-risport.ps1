@@ -155,8 +155,8 @@ function Get-DeviceRegistrationStatuses {
          | Where-Object { $_.HasChildNodes }
 
          foreach ($nodeDevices in $devicesPerNode) {
-            $formattedDeviceStatuses = [object[]]($nodeDevices.item | Select-Object -Property Name, Status, StatusReason, TimeStamp)
-            $formattedDeviceStatuses | ForEach-Object { $registrationStatuses.Add($_.Name, $_) }
+            $nodeDevices.item | Select-Object -Property Name, Status, StatusReason, TimeStamp 
+            | ForEach-Object { $registrationStatuses.Add($_.Name, $_) }
          }
       }
 
