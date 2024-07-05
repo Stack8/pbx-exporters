@@ -225,5 +225,6 @@ catch {
       Write-Error "Ran into errors when exporting RISport information: $_"
    }
 
+   Write-Error "RISport information export failed"
    exit 1
 }
