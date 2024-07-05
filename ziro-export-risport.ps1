@@ -101,7 +101,7 @@ class CucmConnector {
          }
       }
 
-      throw "An unexpected error occured when getting device registration statuses"
+      throw "An unexpected error occurred when getting device registration statuses"
    }
 }
 
@@ -178,6 +178,8 @@ try {
    Write-Host "Found [$($devices.Length)] devices"
    Write-Host "Getting device registration statuses..."
    $registrationStatuses = Get-DeviceRegistrationStatuses -DeviceNames $devices.name -CucmConnector $cucmConnector
+   $registrationStatuses
+   $registrationStatuses
    $exportResults = New-Object System.Collections.Generic.List[Hashtable]
 
    foreach ($device in $devices) {
