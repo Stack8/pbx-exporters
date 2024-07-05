@@ -216,10 +216,10 @@ catch {
    $responseCode = $_.Exception.Response.StatusCode.value__
 
    if ($responseCode -eq 401) {
-      Write-Error "Invalid credentials (401 Unauthorized): $_"
+      Write-Error "Invalid credentials (401 Unauthorized)"
    }
    elseif ($responseCode -eq 403) {
-      Write-Error "Insufficient permissions (403 Forbidden): $_"
+      Write-Error "Insufficient permissions (403 Forbidden)"
    }
    else {
       Write-Error "Ran into errors when exporting RISport information: $_"
