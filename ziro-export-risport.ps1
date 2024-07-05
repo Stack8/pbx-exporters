@@ -47,7 +47,7 @@ class CucmConnector {
          'Content-Type' = 'text/xml; charset=UTF-8'
       }  
 
-      $bodySelectItemsList = $deviceNames | ForEach-Object { @"
+      $bodySelectItemsList = $DeviceNames | ForEach-Object { @"
          <soap:item>
             <soap:Item>${PSItem}</soap:Item>
          </soap:item>
