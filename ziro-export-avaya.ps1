@@ -58,7 +58,7 @@ function Invoke-CommandOnAyavaSshStream {
     Add-Content -Path "output-avaya/avaya.txt" -Value $streamOut
 }
 
-Import-Module $PSScriptRoot\Modules\Pester
+Import-Module $PSScriptRoot/modules/Posh-SSH/
 
 $serverUrl = Read-Host 'Avaya FQDN or IP Address (avayacm.mycompany.com)'
 $credential = Get-Credential -Message 'Enter username and password'
