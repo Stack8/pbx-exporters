@@ -6,19 +6,31 @@ function Wait-UntilTerminalIsReady {
     param (
         [Renci.SshNet.ShellStream]$ShellStream
     )
+    $retry = 0
     $streamOut = $ShellStream.Read()
 
     # Wait until we can select terminal type and choose ossi
-    while (-Not ($streamOut).Contains("Terminal Type")) {
+    while (-Not ($streamOut).Contains("Terminal Type") -and $retry -le 10) {
+        Start-Sleep -s 1
+        $streamOut = $ShellStream.Read()
+        $retry++
+    }
+
+    if ($retry -gt 10) {
+        throw "Timed out whie initializing waiting for terminal type prompt"
+    }
+
+    $retry = 0
+    $ShellStream.WriteLine('ossi')
+    
+    # Read until stream is empty before starting to send commands
+    while (($streamOut).length -ne 0 -and $retry -le 10) {
         Start-Sleep -s 1
         $streamOut = $ShellStream.Read()
     }
-    $ShellStream.WriteLine('ossi')
 
-    # Wait until stream is empty before starting to send commands
-    while (($streamOut).length -ne 0) {
-        Start-Sleep -s 1
-        $streamOut = $ShellStream.Read()
+    if ($retry -gt 10) {
+        throw "Timed out whie initializing OSSI terminal"
     }
 }
 
@@ -28,13 +40,20 @@ function Invoke-CommandOnAyavaSshStream {
         [string]$Command,
         [Renci.SshNet.ShellStream]$ShellStream
     )
+    $retry = 0
+
     $ShellStream.WriteLine($Command)
     $ShellStream.WriteLine('t')
 
     $streamOut = $ShellStream.Read()
-    while (($streamOut).length -eq 0) {
+    while (($streamOut).length -eq 0 -and $retry -le 10) {
         Start-Sleep -s 1
         $streamOut = $ShellStream.Read()
+        $retry++
+    }
+
+    if ([string]::IsNullOrEmpty($streamOut)) {
+        throw "Failed to get result for command $Command"
     }
 
     Add-Content -Path "output-avaya/avaya.txt" -Value $streamOut
