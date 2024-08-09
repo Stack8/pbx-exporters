@@ -36,10 +36,45 @@
         </TN>
         <DCT>
           <En>
-            <S N="Key">Function</S>
+            <S N="Key">RoleCapability</S>
             <Obj N="Value" RefId="3">
               <TNRef RefId="1" />
+              <LST />
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Cmdlet</S>
+            <Obj N="Value" RefId="4">
+              <TNRef RefId="1" />
               <LST>
+                <S>Get-SCPItem</S>
+                <S>Get-SFTPItem</S>
+                <S>New-SFTPSession</S>
+                <S>New-SSHSession</S>
+                <S>Set-SCPItem</S>
+                <S>Set-SFTPItem</S>
+                <S>New-SSHMemoryKnownHost</S>
+                <S>Get-SSHJsonKnownHost</S>
+                <S>Get-SSHOpenSSHKnownHost</S>
+                <S>Get-SSHHostKey</S>
+              </LST>
+            </Obj>
+          </En>
+          <En>
+            <S N="Key">Command</S>
+            <Obj N="Value" RefId="5">
+              <TNRef RefId="1" />
+              <LST>
+                <S>Get-SCPItem</S>
+                <S>Get-SFTPItem</S>
+                <S>New-SFTPSession</S>
+                <S>New-SSHSession</S>
+                <S>Set-SCPItem</S>
+                <S>Set-SFTPItem</S>
+                <S>New-SSHMemoryKnownHost</S>
+                <S>Get-SSHJsonKnownHost</S>
+                <S>Get-SSHOpenSSHKnownHost</S>
+                <S>Get-SSHHostKey</S>
                 <S>Get-PoshSSHModVersion</S>
                 <S>Get-SFTPChildItem</S>
                 <S>Get-SFTPContent</S>
@@ -81,20 +116,10 @@
             </Obj>
           </En>
           <En>
-            <S N="Key">Command</S>
-            <Obj N="Value" RefId="4">
+            <S N="Key">Function</S>
+            <Obj N="Value" RefId="6">
               <TNRef RefId="1" />
               <LST>
-                <S>Get-SCPItem</S>
-                <S>Get-SFTPItem</S>
-                <S>New-SFTPSession</S>
-                <S>New-SSHSession</S>
-                <S>Set-SCPItem</S>
-                <S>Set-SFTPItem</S>
-                <S>New-SSHMemoryKnownHost</S>
-                <S>Get-SSHJsonKnownHost</S>
-                <S>Get-SSHOpenSSHKnownHost</S>
-                <S>Get-SSHHostKey</S>
                 <S>Get-PoshSSHModVersion</S>
                 <S>Get-SFTPChildItem</S>
                 <S>Get-SFTPContent</S>
@@ -137,36 +162,11 @@
           </En>
           <En>
             <S N="Key">DscResource</S>
-            <Obj N="Value" RefId="5">
-              <TNRef RefId="1" />
-              <LST />
-            </Obj>
+            <Ref N="Value" RefId="3" />
           </En>
           <En>
             <S N="Key">Workflow</S>
-            <Ref N="Value" RefId="5" />
-          </En>
-          <En>
-            <S N="Key">RoleCapability</S>
-            <Ref N="Value" RefId="5" />
-          </En>
-          <En>
-            <S N="Key">Cmdlet</S>
-            <Obj N="Value" RefId="6">
-              <TNRef RefId="1" />
-              <LST>
-                <S>Get-SCPItem</S>
-                <S>Get-SFTPItem</S>
-                <S>New-SFTPSession</S>
-                <S>New-SSHSession</S>
-                <S>Set-SCPItem</S>
-                <S>Set-SFTPItem</S>
-                <S>New-SSHMemoryKnownHost</S>
-                <S>Get-SSHJsonKnownHost</S>
-                <S>Get-SSHOpenSSHKnownHost</S>
-                <S>Get-SSHHostKey</S>
-              </LST>
-            </Obj>
+            <Ref N="Value" RefId="3" />
           </En>
         </DCT>
       </Obj>
@@ -196,7 +196,7 @@
           <S N="published">2024-08-08 3:15:07 p.m. -04:00</S>
           <S N="created">2024-08-08 3:15:07 p.m. -04:00</S>
           <S N="lastUpdated">2024-08-08 11:50:00 p.m. -04:00</S>
-          <S N="tags">PSModule PSCmdlet_Get-SCPItem PSCommand_Get-SCPItem PSCmdlet_Get-SFTPItem PSCommand_Get-SFTPItem PSCmdlet_New-SFTPSession PSCommand_New-SFTPSession PSCmdlet_New-SSHSession PSCommand_New-SSHSession PSCmdlet_Set-SCPItem PSCommand_Set-SCPItem PSCmdlet_Set-SFTPItem PSCommand_Set-SFTPItem PSCmdlet_New-SSHMemoryKnownHost PSCommand_New-SSHMemoryKnownHost PSCmdlet_Get-SSHJsonKnownHost PSCommand_Get-SSHJsonKnownHost PSCmdlet_Get-SSHOpenSSHKnownHost PSCommand_Get-SSHOpenSSHKnownHost PSCmdlet_Get-SSHHostKey PSCommand_Get-SSHHostKey PSIncludes_Cmdlet PSFunction_Get-PoshSSHModVersion PSCommand_Get-PoshSSHModVersion PSFunction_Get-SFTPChildItem PSCommand_Get-SFTPChildItem PSFunction_Get-SFTPContent PSCommand_Get-SFTPContent PSFunction_Get-SFTPLocation PSCommand_Get-SFTPLocation PSFunction_Get-SFTPPathAttribute PSCommand_Get-SFTPPathAttribute PSFunction_Get-SFTPPathInformation PSCommand_Get-SFTPPathInformation PSFunction_Get-SFTPSession PSCommand_Get-SFTPSession PSFunction_Get-SSHPortForward PSCommand_Get-SSHPortForward PSFunction_Get-SSHSession PSCommand_Get-SSHSession PSFunction_Get-SSHTrustedHost PSCommand_Get-SSHTrustedHost PSFunction_Invoke-SSHCommand PSCommand_Invoke-SSHCommand PSFunction_Invoke-SSHCommandStream PSCommand_Invoke-SSHCommandStream PSFunction_Invoke-SSHStreamExpectAction PSCommand_Invoke-SSHStreamExpectAction PSFunction_Invoke-SSHStreamExpectSecureAction PSCommand_Invoke-SSHStreamExpectSecureAction PSFunction_Invoke-SSHStreamShellCommand PSCommand_Invoke-SSHStreamShellCommand PSFunction_Move-SFTPItem PSCommand_Move-SFTPItem PSFunction_New-SFTPFileStream PSCommand_New-SFTPFileStream PSFunction_New-SFTPItem PSCommand_New-SFTPItem PSFunction_New-SFTPSymlink PSCommand_New-SFTPSymlink PSFunction_New-SSHDynamicPortForward PSCommand_New-SSHDynamicPortForward PSFunction_New-SSHLocalPortForward PSCommand_New-SSHLocalPortForward PSFunction_New-SSHRemotePortForward PSCommand_New-SSHRemotePortForward PSFunction_New-SSHShellStream PSCommand_New-SSHShellStream PSFunction_New-SSHTrustedHost PSCommand_New-SSHTrustedHost PSFunction_Remove-SFTPItem PSCommand_Remove-SFTPItem PSFunction_Remove-SFTPSession PSCommand_Remove-SFTPSession PSFunction_Remove-SSHSession PSCommand_Remove-SSHSession PSFunction_Remove-SSHTrustedHost PSCommand_Remove-SSHTrustedHost PSFunction_Rename-SFTPFile PSCommand_Rename-SFTPFile PSFunction_Set-SFTPContent PSCommand_Set-SFTPContent PSFunction_Set-SFTPLocation PSCommand_Set-SFTPLocation PSFunction_Set-SFTPPathAttribute PSCommand_Set-SFTPPathAttribute PSFunction_Start-SSHPortForward PSCommand_Start-SSHPortForward PSFunction_Stop-SSHPortForward PSCommand_Stop-SSHPortForward PSFunction_Test-SFTPPath PSCommand_Test-SFTPPath PSFunction_Convert-SSHRegistryToJsonKnownHost PSCommand_Convert-SSHRegistryToJsonKnownHost PSFunction_Get-SSHRegistryKnownHost PSCommand_Get-SSHRegistryKnownHost PSIncludes_Function</S>
+          <S N="tags">PSModule</S>
           <S N="developmentDependency">False</S>
           <S N="updated">2024-08-08T23:50:00Z</S>
           <S N="NormalizedVersion">3.2.1</S>
@@ -204,12 +204,14 @@
           <S N="IsPrerelease">false</S>
           <S N="ItemType">Module</S>
           <S N="FileList">Posh-SSH.nuspec|Posh-SSH.psd1|Posh-SSH.psm1|PoshSSH.dll|Assembly\Microsoft.Bcl.AsyncInterfaces.dll|Assembly\Newtonsoft.Json.dll|Assembly\Renci.SshNet.dll|Assembly\Renci.SshNet.pdb|Assembly\Renci.SshNet.xml|Assembly\SshNet.Security.Cryptography.dll|Assembly\System.Buffers.dll|Assembly\System.Management.Automation.dll|Assembly\System.Memory.dll|Assembly\System.Numerics.Vectors.dll|Assembly\System.Runtime.CompilerServices.Unsafe.dll|Assembly\System.Threading.Tasks.Extensions.dll|en-US\Posh-SSH-help.xml|en-US\Posh-SSH.psm1-Help.xml|en-US\PoshSSH.dll-help.xml|Format\Renci.SshNet.Sftp.SftpFile.Format.ps1xml|Format\Renci.SshNet.SshCommand.Format.ps1xml|Format\SFTPSession.Format.ps1xml|Format\SSHSession.Format.ps1xml</S>
+          <S N="Cmdlets">Get-SCPItem Get-SFTPItem New-SFTPSession New-SSHSession Set-SCPItem Set-SFTPItem New-SSHMemoryKnownHost Get-SSHJsonKnownHost Get-SSHOpenSSHKnownHost Get-SSHHostKey</S>
+          <S N="Functions">Get-PoshSSHModVersion Get-SFTPChildItem Get-SFTPContent Get-SFTPLocation Get-SFTPPathAttribute Get-SFTPPathInformation Get-SFTPSession Get-SSHPortForward Get-SSHSession Get-SSHTrustedHost Invoke-SSHCommand Invoke-SSHCommandStream Invoke-SSHStreamExpectAction Invoke-SSHStreamExpectSecureAction Invoke-SSHStreamShellCommand Move-SFTPItem New-SFTPFileStream New-SFTPItem New-SFTPSymlink New-SSHDynamicPortForward New-SSHLocalPortForward New-SSHRemotePortForward New-SSHShellStream New-SSHTrustedHost Remove-SFTPItem Remove-SFTPSession Remove-SSHSession Remove-SSHTrustedHost Rename-SFTPFile Set-SFTPContent Set-SFTPLocation Set-SFTPPathAttribute Start-SSHPortForward Stop-SSHPortForward Test-SFTPPath Convert-SSHRegistryToJsonKnownHost Get-SSHRegistryKnownHost</S>
           <S N="GUID">f5c99306-7b5a-4fca-a052-f79ad1e48fbf</S>
           <S N="PowerShellVersion">5.1</S>
           <S N="CompanyName">www.darkoperator.com</S>
         </MS>
       </Obj>
-      <S N="InstalledLocation">/home/amonzerol/dev/projects/pbx-exporters/Posh-SSH/3.2.1</S>
+      <S N="InstalledLocation">/home/amonzerol/dev/projects/pbx-exporters/modules/Posh-SSH/3.2.1</S>
     </MS>
   </Obj>
 </Objs>
