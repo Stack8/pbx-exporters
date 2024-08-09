@@ -2,17 +2,23 @@
 #Requires -Modules Posh-SSH
 
 
-
-function Initialize-OssiTerminal {
+function Wait-UntilTerminalIsReady {
     param (
-        [Renci.SshNet.ShellStream]$SshSession
+        [Renci.SshNet.ShellStream]$ShellStream
     )
-    $stream.WriteLine('ossi')
+    $streamOut = $ShellStream.Read()
 
-    $streamOut = $stream.Read()
-    while (-Not ($streamOut).Contains("ossi")) {
+    # Wait until we can select terminal type and choose ossi
+    while (-Not ($streamOut).Contains("Terminal Type")) {
         Start-Sleep -s 1
-        $streamOut = $stream.Read()
+        $streamOut = $ShellStream.Read()
+    }
+    $ShellStream.WriteLine('ossi')
+
+    # Wait until stream is empty before starting to send commands
+    while (($streamOut).length -ne 0) {
+        Start-Sleep -s 1
+        $streamOut = $ShellStream.Read()
     }
 }
 
@@ -20,18 +26,18 @@ function Initialize-OssiTerminal {
 function Invoke-CommandOnAyavaSshStream {
     param (
         [string]$Command,
-        [Renci.SshNet.ShellStream]$SshSession
+        [Renci.SshNet.ShellStream]$ShellStream
     )
-    $stream.WriteLine($Command)
-    $stream.WriteLine('t')
+    $ShellStream.WriteLine($Command)
+    $ShellStream.WriteLine('t')
 
-    $streamOut = $stream.Read()
+    $streamOut = $ShellStream.Read()
     while (($streamOut).length -eq 0) {
         Start-Sleep -s 1
-        $streamOut = $stream.Read()
+        $streamOut = $ShellStream.Read()
     }
 
-    Write-Output $streamOut
+    Add-Content -Path "output-avaya/avaya.txt" -Value $streamOut
 }
 
 
@@ -39,10 +45,13 @@ $serverUrl = Read-Host 'Avaya FQDN or IP Address (avayacm.mycompany.com)'
 $credential = Get-Credential -Message 'Enter username and password'
 
 $sshsession = New-SSHSession -ComputerName $serverurl -Credential $credential -Port 5022
-
 $stream = New-SSHShellStream -SSHSession $sshsession
 
-Initialize-OssiTerminal($stream)
-Invoke-CommandOnAyavaSshStream('clist hunt-group', $stream)
+New-Item -Name "output-avaya" -ItemType Directory -Force | Out-Null
+New-Item -ItemType File -Name "output-avaya/avaya.txt" -Force | Out-Null
 
-Remove-SSHSession -SSHSession $sshsession
+Wait-UntilTerminalIsReady $stream
+Invoke-CommandOnAyavaSshStream 'clist hunt-group' $stream
+Invoke-CommandOnAyavaSshStream 'clist pickup-group' $stream
+
+Remove-SSHSession -SSHSession $sshsession | Out-Null
