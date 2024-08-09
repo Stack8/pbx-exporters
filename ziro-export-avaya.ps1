@@ -51,7 +51,34 @@ New-Item -Name "output-avaya" -ItemType Directory -Force | Out-Null
 New-Item -ItemType File -Name "output-avaya/avaya.txt" -Force | Out-Null
 
 Wait-UntilTerminalIsReady $stream
+
 Invoke-CommandOnAyavaSshStream 'clist hunt-group' $stream
 Invoke-CommandOnAyavaSshStream 'clist pickup-group' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay alias station' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay tenant 1' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 1' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 2' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 3' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 4' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 5' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 6' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 7' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 8' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 9' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 10' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay feature-access-codes' $stream
+Invoke-CommandOnAyavaSshStream 'clist coverage path' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay ip-network-map' $stream
+Invoke-CommandOnAyavaSshStream 'cdisplay capacity' $stream
+Invoke-CommandOnAyavaSshStream 'clist user-profiles' $stream
+Invoke-CommandOnAyavaSshStream 'clist route-pattern' $stream
+Invoke-CommandOnAyavaSshStream 'clist integrated-annc-boards' $stream
+Invoke-CommandOnAyavaSshStream 'clist ars analysis' $stream
+Invoke-CommandOnAyavaSshStream 'clist media-gateway' $stream
+Invoke-CommandOnAyavaSshStream 'clist public-unknown-numbering' $stream
+Invoke-CommandOnAyavaSshStream 'clist off-pbx-telephone station-mapping' $stream
+Invoke-CommandOnAyavaSshStream 'clist intercom-group' $stream
+Invoke-CommandOnAyavaSshStream 'clist abbreviated-dialing personal' $stream
+Invoke-CommandOnAyavaSshStream 'clist station' $stream
 
 Remove-SSHSession -SSHSession $sshsession | Out-Null
