@@ -75,25 +75,6 @@ try {
 
     Wait-UntilTerminalIsReady $stream
 
-    $extensions = Invoke-CommandOnAyavaSshStream @('clist station', 'f8005ff00') $stream
-
-    foreach ($extension in $extensions) {
-        # Trim the leading d in d{extension}
-        $extension = $extension.substring(1)
-        Invoke-CommandOnAyavaSshStream "cdisplay station $extension" $stream | Out-Null
-        Invoke-CommandOnAyavaSshStream "clist bridged-extensions $extension" $stream | Out-Null
-        Invoke-CommandOnAyavaSshStream "cdisplay button-labels $extension" $stream | Out-Null
-    }
-
-    $cors = Invoke-CommandOnAyavaSshStream @('clist station', 'f8001ff00') $stream
-
-    foreach ($cor in $cors) {
-        # Trim the leading d in d{cors}
-        $cor = $cor.substring(1)
-        Invoke-CommandOnAyavaSshStream "cdisplay cor $cor" $stream | Out-Null
-    }
-
-
     Invoke-CommandOnAyavaSshStream 'clist hunt-group' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'clist pickup-group' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'cdisplay alias station' $stream | Out-Null
@@ -122,6 +103,32 @@ try {
     Invoke-CommandOnAyavaSshStream 'clist intercom-group' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'clist abbreviated-dialing personal' $stream |  Out-Null
     Invoke-CommandOnAyavaSshStream 'clist station' $stream | Out-Null
+
+    $extensions = Invoke-CommandOnAyavaSshStream @('clist station', 'f8005ff00') $stream
+
+    foreach ($extension in $extensions) {
+        # Trim the leading d in d{extension}
+        $extension = $extension.substring(1)
+        Invoke-CommandOnAyavaSshStream "cdisplay station $extension" $stream | Out-Null
+        Invoke-CommandOnAyavaSshStream "clist bridged-extensions $extension" $stream | Out-Null
+        Invoke-CommandOnAyavaSshStream "cdisplay button-labels $extension" $stream | Out-Null
+    }
+
+    $cors = Invoke-CommandOnAyavaSshStream @('clist station', 'f8001ff00') $stream
+
+    foreach ($cor in $cors) {
+        # Trim the leading d in d{cor}
+        $cor = $cor.substring(1)
+        Invoke-CommandOnAyavaSshStream "cdisplay cor $cor" $stream | Out-Null
+    }
+
+    $coss = Invoke-CommandOnAyavaSshStream @('clist station', 'f8002ff00') $stream
+
+    foreach ($cos in $coss) {
+        # Trim the leading d in d{cos}
+        $cos = $cos.substring(1)
+        Invoke-CommandOnAyavaSshStream "cdisplay cos $cos" $stream | Out-Null
+    }
 
     Remove-SSHSession -SSHSession $sshsession | Out-Null
     Write-Host "The script ran successfully" -ForegroundColor Green
