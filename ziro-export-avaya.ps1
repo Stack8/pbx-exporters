@@ -85,6 +85,15 @@ try {
         Invoke-CommandOnAyavaSshStream "cdisplay button-labels $extension" $stream | Out-Null
     }
 
+    $cors = Invoke-CommandOnAyavaSshStream @('clist station', 'f8001ff00') $stream
+
+    foreach ($cor in $cors) {
+        # Trim the leading d in d{cors}
+        $cor = $cor.substring(1)
+        Invoke-CommandOnAyavaSshStream "cdisplay cor $cor" $stream | Out-Null
+    }
+
+
     Invoke-CommandOnAyavaSshStream 'clist hunt-group' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'clist pickup-group' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'cdisplay alias station' $stream | Out-Null
