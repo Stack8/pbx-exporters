@@ -59,7 +59,7 @@ function Invoke-CommandOnAyavaSshStream {
     }
 
     Add-Content -Path "output-avaya/avaya.txt" -Value $streamOut
-    return $streamOut.Split("`n") -ne 't' | Where-Object {$_.Trim("") -and $Commands -notcontains $_ }
+    return $streamOut.Split("`n") -ne 't' | Where-Object { $_.Trim("") -and $Commands -notcontains $_ }
 }
 try {
     Import-Module $PSScriptRoot/modules/Posh-SSH/
@@ -75,7 +75,15 @@ try {
 
     Wait-UntilTerminalIsReady $stream
 
-    $stations = Invoke-CommandOnAyavaSshStream @('clist station', 'f8005ff00') $stream
+    $extensions = Invoke-CommandOnAyavaSshStream @('clist station', 'f8005ff00') $stream
+
+    foreach ($extension in $extensions) {
+        # Trim the leading d in d{extension}
+        $extension = $extension.substring(1)
+        Invoke-CommandOnAyavaSshStream "cdisplay station $extension" $stream | Out-Null
+        Invoke-CommandOnAyavaSshStream "clist bridged-extensions $extension" $stream | Out-Null
+        Invoke-CommandOnAyavaSshStream "cdisplay button-labels $extension" $stream | Out-Null
+    }
 
     Invoke-CommandOnAyavaSshStream 'clist hunt-group' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'clist pickup-group' $stream | Out-Null
