@@ -36,13 +36,15 @@ function Wait-UntilTerminalIsReady {
 
 function Invoke-CommandOnAyavaSshStream {
     param (
-        [string]$Command,
+        [string[]]$Commands,
         [Renci.SshNet.ShellStream]$ShellStream
     )
     $retry = 0
 
-    Write-Host "Running command $Command"
-    $ShellStream.WriteLine($Command)
+    foreach ($Command in $Commands) {
+        Write-Host "Running command $Command"
+        $ShellStream.WriteLine($Command)
+    }
     $ShellStream.WriteLine('t')
 
     $streamOut = $ShellStream.Read()
@@ -53,10 +55,11 @@ function Invoke-CommandOnAyavaSshStream {
     }
 
     if ([string]::IsNullOrEmpty($streamOut)) {
-        throw "Failed to get result for command $Command"
+        throw "Failed to get result for commands $Commands"
     }
 
     Add-Content -Path "output-avaya/avaya.txt" -Value $streamOut
+    return $streamOut
 }
 try {
     Import-Module $PSScriptRoot/modules/Posh-SSH/
@@ -72,39 +75,43 @@ try {
 
     Wait-UntilTerminalIsReady $stream
 
-    Invoke-CommandOnAyavaSshStream 'clist hunt-group' $stream
-    Invoke-CommandOnAyavaSshStream 'clist pickup-group' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay alias station' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay tenant 1' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 1' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 2' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 3' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 4' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 5' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 6' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 7' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 8' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 9' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 10' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay feature-access-codes' $stream
-    Invoke-CommandOnAyavaSshStream 'clist coverage path' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay ip-network-map' $stream
-    Invoke-CommandOnAyavaSshStream 'cdisplay capacity' $stream
-    Invoke-CommandOnAyavaSshStream 'clist user-profiles' $stream
-    Invoke-CommandOnAyavaSshStream 'clist route-pattern' $stream
-    Invoke-CommandOnAyavaSshStream 'clist integrated-annc-boards' $stream
-    Invoke-CommandOnAyavaSshStream 'clist ars analysis' $stream
-    Invoke-CommandOnAyavaSshStream 'clist media-gateway' $stream
-    Invoke-CommandOnAyavaSshStream 'clist public-unknown-numbering' $stream
-    Invoke-CommandOnAyavaSshStream 'clist off-pbx-telephone station-mapping' $stream
-    Invoke-CommandOnAyavaSshStream 'clist intercom-group' $stream
-    Invoke-CommandOnAyavaSshStream 'clist abbreviated-dialing personal' $stream
-    Invoke-CommandOnAyavaSshStream 'clist station' $stream
+    $stations = Invoke-CommandOnAyavaSshStream @('clist station', 'f8005ff00') $stream
+
+    Invoke-CommandOnAyavaSshStream 'clist hunt-group' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist pickup-group' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay alias station' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay tenant 1' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 1' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 2' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 3' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 4' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 5' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 6' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 7' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 8' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 9' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay coverage remote 10' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay feature-access-codes' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist coverage path' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay ip-network-map' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'cdisplay capacity' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist user-profiles' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist route-pattern' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist integrated-annc-boards' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist ars analysis' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist media-gateway' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist public-unknown-numbering' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist off-pbx-telephone station-mapping' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist intercom-group' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist abbreviated-dialing personal' $stream |  Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist station' $stream | Out-Null
 
     Remove-SSHSession -SSHSession $sshsession | Out-Null
     Write-Host "The script ran successfully" -ForegroundColor Green
     exit 0
-} catch { 
+}
+catch { 
+    Write-host -f red "Encountered Error:"$_.Exception.Message
     Write-Error "Avaya information export failed"
     exit 1
- }
+}
