@@ -59,7 +59,7 @@ function Invoke-CommandOnAyavaSshStream {
     }
 
     Add-Content -Path "output-avaya/avaya.txt" -Value $streamOut
-    return $streamOut
+    return $streamOut.Split("`n") -ne 't' | Where-Object {$_.Trim("") -and $Commands -notcontains $_ }
 }
 try {
     Import-Module $PSScriptRoot/modules/Posh-SSH/
