@@ -59,7 +59,7 @@ function Invoke-CommandOnAyavaSshStream {
     }
 
     Add-Content -Path "output-avaya/avaya.txt" -Value $streamOut
-    return $streamOut.Split("`n") | Where-Object { $_.Trim("") -and $Commands -notcontains $_ -and $_ -ne 'n' -and $_ -ne 't'}
+    return $streamOut.Split("`n") | Where-Object { $_.Trim("") -and $Commands -notcontains $_ -and $_ -ne 'n' -and $_ -ne 't' }
 }
 try {
     Import-Module $PSScriptRoot/modules/Posh-SSH/
@@ -105,6 +105,7 @@ try {
     Invoke-CommandOnAyavaSshStream 'clist station' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'clist trunk-group' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'clist vector' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist vdn' $stream | Out-Null
 
     $extensions = Invoke-CommandOnAyavaSshStream @('clist station', 'f8005ff00') $stream
 
@@ -142,6 +143,13 @@ try {
     foreach ($vector in $vectors) {
         $vector = $vector.substring(1)
         Invoke-CommandOnAyavaSshStream "cdisplay vector $vector" $stream | Out-Null
+    }
+
+    $vdns = Invoke-CommandOnAyavaSshStream @('clist vdn', 'f8003ff02') $stream
+
+    foreach ($vdn in $vdns) {
+        $vdn = $vdn.substring(1)
+        Invoke-CommandOnAyavaSshStream "cdisplay vdn $vdn" $stream | Out-Null
     }
 
     Invoke-CommandOnAyavaSshStream "clogoff" $stream | Out-Null
