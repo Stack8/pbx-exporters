@@ -42,14 +42,15 @@ function Get-AvayaSubEntities {
     ) 
     $ProgressCount = 0
     foreach ($EntityId in $EntitiesId) {
-        # Remove the trailing d
+        # Remove the trailing d in all the Avaya ids
         $EntityId = $EntityId.substring(1)
 
         foreach ($Command in $Commands) {
             Invoke-CommandOnAyavaSshStream "$Command $EntityId" $ShellStream | Out-Null
-            $ProgressCount++
-            Write-Progress -activity "Getting $EntitiesName information..." -status "Fetched: $ProgressCount of $($EntitiesId.Count)" -percentComplete (($ProgressCount / $EntitiesId.Count) * 100)
         }
+
+        $ProgressCount++
+        Write-Progress -activity "Getting $EntitiesName information..." -status "Fetched: $ProgressCount of $($EntitiesId.Count)" -percentComplete (($ProgressCount / $EntitiesId.Count) * 100)
     }
 }
 
