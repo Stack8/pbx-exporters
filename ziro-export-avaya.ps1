@@ -33,6 +33,25 @@ function Wait-UntilTerminalIsReady {
     }
 }
 
+function Get-AvayaSubEntities {
+    param (
+        $EntitiesId,
+        [string]$EntitiesName,
+        [string[]]$Commands,
+        [Renci.SshNet.ShellStream]$ShellStream
+    ) 
+    $ProgressCount = 0
+    foreach ($EntityId in $EntitiesId) {
+        # Remove the trailing d
+        $EntityId = $EntityId.substring(1)
+
+        foreach ($Command in $Commands) {
+            Invoke-CommandOnAyavaSshStream "$Command $EntityId" $ShellStream | Out-Null
+            $ProgressCount++
+            Write-Progress -activity "Getting $EntitiesName information..." -status "Fetched: $ProgressCount of $($EntitiesId.Count)" -percentComplete (($ProgressCount / $EntitiesId.Count) * 100)
+        }
+    }
+}
 
 function Invoke-CommandOnAyavaSshStream {
     param (
@@ -63,6 +82,7 @@ function Invoke-CommandOnAyavaSshStream {
 }
 
 $sshsession = $null;
+$stream = $null;
 try {
     Import-Module $PSScriptRoot/modules/Posh-SSH/
 
@@ -111,64 +131,30 @@ try {
     Invoke-CommandOnAyavaSshStream 'clist ip-network-region monitor' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'clist announcement' $stream | Out-Null
 
-    $extensions = Invoke-CommandOnAyavaSshStream @('clist station', 'f8005ff00') $stream
+    $extensionIds = Invoke-CommandOnAyavaSshStream @('clist station', 'f8005ff00') $stream
+    Get-AvayaSubEntities $extensionIds 'Extensions' @('cdisplay station', 'clist bridged-extensions', 'cdisplay button-labels') $stream
 
-    foreach ($extension in $extensions) {
-        $extension = $extension.substring(1)
-        Invoke-CommandOnAyavaSshStream "cdisplay station $extension" $stream | Out-Null
-        Invoke-CommandOnAyavaSshStream "clist bridged-extensions $extension" $stream | Out-Null
-        Invoke-CommandOnAyavaSshStream "cdisplay button-labels $extension" $stream | Out-Null
-    }
+    $corIds = Invoke-CommandOnAyavaSshStream @('clist station', 'f8001ff00') $stream
+    Get-AvayaSubEntities $corIds 'CORs' 'cdisplay cor' $stream
 
-    $cors = Invoke-CommandOnAyavaSshStream @('clist station', 'f8001ff00') $stream
+    $cosIds = Invoke-CommandOnAyavaSshStream @('clist station', 'f8002ff00') $stream
+    Get-AvayaSubEntities $cosIds 'COSs' 'cdisplay cos' $stream
 
-    foreach ($cor in $cors) {
-        $cor = $cor.substring(1)
-        Invoke-CommandOnAyavaSshStream "cdisplay cor $cor" $stream | Out-Null
-    }
+    $trunkGroupIds = Invoke-CommandOnAyavaSshStream @('clist trunk-group', 'f800bff00') $stream
+    Get-AvayaSubEntities $trunkGroupIds 'Trunk Groups' @('cdisplay trunk-group', 'inc-call-handling-trmt trunk-group') $stream
 
-    $coss = Invoke-CommandOnAyavaSshStream @('clist station', 'f8002ff00') $stream
+    $vectorIds = Invoke-CommandOnAyavaSshStream @('clist vector', 'f0001ff01') $stream
+    Get-AvayaSubEntities $vectorIds 'Vectors' 'cdisplay vector' $stream
 
-    foreach ($cos in $coss) {
-        $cos = $cos.substring(1)
-        Invoke-CommandOnAyavaSshStream "cdisplay cos $cos" $stream | Out-Null
-    }
+    $vdnIds = Invoke-CommandOnAyavaSshStream @('clist vdn', 'f8003ff02') $stream
+    Get-AvayaSubEntities $vdnIds 'VDNs' 'cdisplay vdn' $stream
 
-    $trunkGroups = Invoke-CommandOnAyavaSshStream @('clist trunk-group', 'f800bff00') $stream
+    $ipNetworkRegionMonitorIds = Invoke-CommandOnAyavaSshStream @('clist ip-network-region monitor', 'f6c00ff00') $stream
+    Get-AvayaSubEntities $ipNetworkRegionMonitorIds 'IP Network Regions' 'cstatus ip-network-region' $stream
 
-    foreach ($trunkGroup in $trunkGroups) {
-        $trunkGroup = $trunkGroup.substring(1)
-        Invoke-CommandOnAyavaSshStream "cdisplay trunk-group $trunkGroup" $stream | Out-Null
-        Invoke-CommandOnAyavaSshStream "inc-call-handling-trmt trunk-group $trunkGroup" $stream | Out-Null
-    }
+    $announcementIds = Invoke-CommandOnAyavaSshStream @('clist announcement', 'f8005ff00') $stream
+    Get-AvayaSubEntities $announcementIds 'Announcements' 'cdisplay announcement' $stream
 
-    $vectors = Invoke-CommandOnAyavaSshStream @('clist vector', 'f0001ff01') $stream
-
-    foreach ($vector in $vectors) {
-        $vector = $vector.substring(1)
-        Invoke-CommandOnAyavaSshStream "cdisplay vector $vector" $stream | Out-Null
-    }
-
-    $vdns = Invoke-CommandOnAyavaSshStream @('clist vdn', 'f8003ff02') $stream
-
-    foreach ($vdn in $vdns) {
-        $vdn = $vdn.substring(1)
-        Invoke-CommandOnAyavaSshStream "cdisplay vdn $vdn" $stream | Out-Null
-    }
-
-    $ipNetworkRegionMonitors = Invoke-CommandOnAyavaSshStream @('clist ip-network-region monitor', 'f6c00ff00') $stream
-
-    foreach ($ipNetworkRegionMonitor in $ipNetworkRegionMonitors) {
-        $ipNetworkRegionMonitor = $ipNetworkRegionMonitor.substring(1)
-        Invoke-CommandOnAyavaSshStream "cstatus ip-network-region $ipNetworkRegionMonitor" $stream | Out-Null
-    }
-
-    $announcements = Invoke-CommandOnAyavaSshStream @('clist announcement', 'f8005ff00') $stream
-
-    foreach ($announcement in $announcements) {
-        $announcement = $announcement.substring(1)
-        Invoke-CommandOnAyavaSshStream "cdisplay announcement $announcement" $stream | Out-Null
-    }
     Write-Host "The script ran successfully" -ForegroundColor Green
     exit 0
 }
@@ -176,9 +162,12 @@ catch {
     Write-host -f red "Encountered Error:"$_.Exception.Message
     Write-Error "Avaya information export failed"
     exit 1
-} finally {
-    if ($null -ne $sshsession) {
+}
+finally {
+    if ($null -ne $stream) {
         Invoke-CommandOnAyavaSshStream "clogoff" $stream | Out-Null
+    }
+    if ($null -ne $sshsession) {
         Remove-SSHSession -SSHSession $sshsession | Out-Null
     }
 }
