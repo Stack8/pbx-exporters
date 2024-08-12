@@ -107,6 +107,7 @@ try {
     Invoke-CommandOnAyavaSshStream 'clist vector' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'clist vdn' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'clist ip-network-region monitor' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist announcement' $stream | Out-Null
 
     $extensions = Invoke-CommandOnAyavaSshStream @('clist station', 'f8005ff00') $stream
 
@@ -158,6 +159,13 @@ try {
     foreach ($ipNetworkRegionMonitor in $ipNetworkRegionMonitors) {
         $ipNetworkRegionMonitor = $ipNetworkRegionMonitor.substring(1)
         Invoke-CommandOnAyavaSshStream "cstatus ip-network-region $ipNetworkRegionMonitor" $stream | Out-Null
+    }
+
+    $announcements = Invoke-CommandOnAyavaSshStream @('clist announcement', 'f8005ff00') $stream
+
+    foreach ($announcement in $announcements) {
+        $announcement = $announcement.substring(1)
+        Invoke-CommandOnAyavaSshStream "cdisplay announcement $announcement" $stream | Out-Null
     }
 
     Invoke-CommandOnAyavaSshStream "clogoff" $stream | Out-Null
