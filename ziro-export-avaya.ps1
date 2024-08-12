@@ -59,7 +59,7 @@ function Invoke-CommandOnAyavaSshStream {
     }
 
     Add-Content -Path "output-avaya/avaya.txt" -Value $streamOut
-    return $streamOut.Split("`n") -ne 't' | Where-Object { $_.Trim("") -and $Commands -notcontains $_ }
+    return $streamOut.Split("`n") | Where-Object { $_.Trim("") -and $Commands -notcontains $_ -and $_ -ne 'n' -and $_ -ne 't'}
 }
 try {
     Import-Module $PSScriptRoot/modules/Posh-SSH/
@@ -103,11 +103,12 @@ try {
     Invoke-CommandOnAyavaSshStream 'clist intercom-group' $stream | Out-Null
     Invoke-CommandOnAyavaSshStream 'clist abbreviated-dialing personal' $stream |  Out-Null
     Invoke-CommandOnAyavaSshStream 'clist station' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist trunk-group' $stream | Out-Null
+    Invoke-CommandOnAyavaSshStream 'clist vector' $stream | Out-Null
 
     $extensions = Invoke-CommandOnAyavaSshStream @('clist station', 'f8005ff00') $stream
 
     foreach ($extension in $extensions) {
-        # Trim the leading d in d{extension}
         $extension = $extension.substring(1)
         Invoke-CommandOnAyavaSshStream "cdisplay station $extension" $stream | Out-Null
         Invoke-CommandOnAyavaSshStream "clist bridged-extensions $extension" $stream | Out-Null
@@ -117,7 +118,6 @@ try {
     $cors = Invoke-CommandOnAyavaSshStream @('clist station', 'f8001ff00') $stream
 
     foreach ($cor in $cors) {
-        # Trim the leading d in d{cor}
         $cor = $cor.substring(1)
         Invoke-CommandOnAyavaSshStream "cdisplay cor $cor" $stream | Out-Null
     }
@@ -125,10 +125,19 @@ try {
     $coss = Invoke-CommandOnAyavaSshStream @('clist station', 'f8002ff00') $stream
 
     foreach ($cos in $coss) {
-        # Trim the leading d in d{cos}
         $cos = $cos.substring(1)
         Invoke-CommandOnAyavaSshStream "cdisplay cos $cos" $stream | Out-Null
     }
+
+    $trunkGroups = Invoke-CommandOnAyavaSshStream @('clist trunk-group', 'f800bff00') $stream
+
+    foreach ($trunkGroup in $trunkGroups) {
+        $trunkGroup = $trunkGroup.substring(1)
+        Invoke-CommandOnAyavaSshStream "cdisplay trunk-group $trunkGroup" $stream | Out-Null
+        Invoke-CommandOnAyavaSshStream "inc-call-handling-trmt trunk-group $trunkGroup" $stream | Out-Null
+    }
+
+    Invoke-CommandOnAyavaSshStream "clogoff" $stream | Out-Null
 
     Remove-SSHSession -SSHSession $sshsession | Out-Null
     Write-Host "The script ran successfully" -ForegroundColor Green
