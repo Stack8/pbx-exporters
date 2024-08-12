@@ -61,6 +61,8 @@ function Invoke-CommandOnAyavaSshStream {
     Add-Content -Path "output-avaya/avaya.txt" -Value $streamOut
     return $streamOut.Split("`n") | Where-Object { $_.Trim("") -and $Commands -notcontains $_ -and $_ -ne 'n' -and $_ -ne 't' }
 }
+
+$sshsession = $null;
 try {
     Import-Module $PSScriptRoot/modules/Posh-SSH/
 
@@ -167,10 +169,6 @@ try {
         $announcement = $announcement.substring(1)
         Invoke-CommandOnAyavaSshStream "cdisplay announcement $announcement" $stream | Out-Null
     }
-
-    Invoke-CommandOnAyavaSshStream "clogoff" $stream | Out-Null
-
-    Remove-SSHSession -SSHSession $sshsession | Out-Null
     Write-Host "The script ran successfully" -ForegroundColor Green
     exit 0
 }
@@ -178,4 +176,9 @@ catch {
     Write-host -f red "Encountered Error:"$_.Exception.Message
     Write-Error "Avaya information export failed"
     exit 1
+} finally {
+    if ($null -ne $sshsession) {
+        Invoke-CommandOnAyavaSshStream "clogoff" $stream | Out-Null
+        Remove-SSHSession -SSHSession $sshsession | Out-Null
+    }
 }
