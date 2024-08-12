@@ -137,6 +137,13 @@ try {
         Invoke-CommandOnAyavaSshStream "inc-call-handling-trmt trunk-group $trunkGroup" $stream | Out-Null
     }
 
+    $vectors = Invoke-CommandOnAyavaSshStream @('clist vector', 'f0001ff01') $stream
+
+    foreach ($vector in $vectors) {
+        $vector = $vector.substring(1)
+        Invoke-CommandOnAyavaSshStream "cdisplay vector $vector" $stream | Out-Null
+    }
+
     Invoke-CommandOnAyavaSshStream "clogoff" $stream | Out-Null
 
     Remove-SSHSession -SSHSession $sshsession | Out-Null
