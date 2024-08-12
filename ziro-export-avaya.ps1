@@ -156,6 +156,13 @@ try {
     $announcementIds = Invoke-CommandOnAyavaSshStream @('clist announcement', 'f8005ff00') $stream
     Get-AvayaSubEntities $announcementIds 'Announcements' 'cdisplay announcement' $stream
 
+    Invoke-CommandOnAyavaSshStream "clogoff" $stream | Out-Null
+
+    $ZipFileName = "avaya_" + (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + ".zip"
+
+    Compress-Archive -Path output-avaya/* -DestinationPath $ZipFileName -Force 
+    Remove-Item -Path output-avaya -Recurse 
+    
     Write-Host "The script ran successfully" -ForegroundColor Green
     exit 0
 }
@@ -165,9 +172,6 @@ catch {
     exit 1
 }
 finally {
-    if ($null -ne $stream) {
-        Invoke-CommandOnAyavaSshStream "clogoff" $stream | Out-Null
-    }
     if ($null -ne $sshsession) {
         Remove-SSHSession -SSHSession $sshsession | Out-Null
     }
