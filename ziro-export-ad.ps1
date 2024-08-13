@@ -1,5 +1,3 @@
-#Requires -Version 7.0
-
 # Display logged in user and provide option to use different credentials
 $loggedInUser = $Env:UserName
 $userName = Read-Host "Running as [$Env:UserName]. Provide a different username or hit ENTER to continue as [$Env:UserName]"
@@ -22,12 +20,12 @@ $filter = Read-Host "[OPTIONAL] Provide a filter, (hit enter to skip)"
 $searchBase = Read-Host -Prompt '[OPTIONAL] Provide Search Base (ex. DC=contoso,DC=com), hit enter to skip'
 
 # Prompt for additional properties to add to CSV that could be relevant to the migration
-$additionalProperties = Read-Host -Prompt "[OPTIONAL] Provide Comma Seperated list of additional attributes to export (by default, it will extract SamAccountName', 'UserPrincipalName','LastLogonDate', 'ipPhone', 'telephoneNumber', 'ObjectCategory')"
+$additionalProperties = Read-Host -Prompt "[OPTIONAL] Provide Comma Seperated list of additional attributes to export (by default, it will extract 'SamAccountName','sn', 'givenName','displayName', 'mail', 'UserPrincipalName','LastLogonDate', 'ipPhone', 'telephoneNumber', 'ObjectCategory')"
 
 	
 # build default set of properties
 $propertiesToReturn = New-Object -TypeName System.Collections.ArrayList
-$propertiesToReturn.AddRange(@('SamAccountName', 'UserPrincipalName', 'LastLogonDate', 'ipPhone', 'telephoneNumber', 'ObjectCategory'))
+$propertiesToReturn.AddRange(@('SamAccountName', 'givenName', 'sn','displayName', 'mail', 'UserPrincipalName', 'LastLogonDate', 'ipPhone', 'telephoneNumber', 'ObjectCategory'))
 
 # add additional properties if provided
 if ($additionalProperties) {
