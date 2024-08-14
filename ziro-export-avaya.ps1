@@ -52,10 +52,6 @@ function Write-CommandsToSshStream {
         $retry++
     }
 
-    if ([string]::IsNullOrEmpty($streamOut)) {
-        throw "$Commands isn't returning a response. Exiting..."
-    }
-    
     return $streamOut
 }
 
@@ -86,20 +82,20 @@ function Get-AvayaEntities {
         [Renci.SshNet.ShellStream]$ShellStream
     )
     $retry = 0
-    $streamOut = Write-CommandsToSshStream $Commands $ShellStream
+    $commandOutput = Write-CommandsToSshStream $Commands $ShellStream
     
-    while (($streamOut).Contains('Terminator received but no command active') -and $retry -le 3) {
+    while (([string]::IsNullOrEmpty($commandOutput) -or ($commandOutput).Contains('Terminator received but no command active')) -and $retry -le 5) {
         Start-Sleep -s 1
-        $streamOut = Write-CommandsToSshStream $Commands $ShellStream
+        $commandOutput = Write-CommandsToSshStream $Commands $ShellStream
         $retry++
     }
 
-    if ($retry -gt 3) {
+    if ($retry -gt 5) {
         Write-Warning "Failed to get result for commands $Commands"
     }
 
-    Add-Content -Path "output-avaya/avaya.txt" -Value $streamOut
-    return $streamOut.Split("`n") | Where-Object { $_.Trim("") -and $Commands -notcontains $_ -and $_ -ne 'n' -and $_ -ne 't' }
+    Add-Content -Path "output-avaya/avaya.txt" -Value $commandOutput
+    return $commandOutput.Split("`n") | Where-Object { $_.Trim("") -and $Commands -notcontains $_ -and $_ -ne 'n' -and $_ -ne 't' }
 }
 
 
