@@ -142,7 +142,7 @@ try {
     Get-AvayaSubEntities $cosIds 'COSs' 'cdisplay cos' $stream
 
     $trunkGroupIds = Invoke-CommandOnAyavaSshStream @('clist trunk-group', 'f800bff00') $stream
-    Get-AvayaSubEntities $trunkGroupIds 'Trunk Groups' @('cdisplay trunk-group', 'inc-call-handling-trmt trunk-group') $stream
+    Get-AvayaSubEntities $trunkGroupIds 'Trunk Groups' @('cdisplay trunk-group', 'cdisplay inc-call-handling-trmt trunk-group') $stream
 
     $vectorIds = Invoke-CommandOnAyavaSshStream @('clist vector', 'f0001ff01') $stream
     Get-AvayaSubEntities $vectorIds 'Vectors' 'cdisplay vector' $stream
