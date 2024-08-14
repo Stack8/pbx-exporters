@@ -91,7 +91,7 @@ function Write-CommandsToSshStream {
     $streamOut = $ShellStream.Read()
 
     while (($streamOut).length -eq 0 -and $retry -le 10) {
-        Start-Sleep -s 1
+        Start-Sleep -s 2
         $streamOut = $ShellStream.Read()
         $retry++
     }
