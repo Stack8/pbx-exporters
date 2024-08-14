@@ -62,7 +62,6 @@ function Invoke-CommandOnAyavaSshStream {
     $retry = 0
 
     foreach ($Command in $Commands) {
-        Write-Host "Running command $Command"
         $ShellStream.WriteLine($Command)
     }
     $ShellStream.WriteLine('t')
