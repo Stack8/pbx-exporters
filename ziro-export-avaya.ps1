@@ -107,7 +107,7 @@ function Write-EntitiesProgressToHost {
     param (
         [Int]$PbxProgressCount
     )
-    Write-Progress -activity "Gathering PBX information..." -status "Fetched: $PbxProgressCount of 40" -percentComplete (($PbxProgressCount / 40) * 100)
+    Write-Progress -activity "Gathering PBX information..." -status "Fetched: $PbxProgressCount of 41" -percentComplete (($PbxProgressCount / 41) * 100)
 }
 
 $sshsession = $null;
@@ -270,6 +270,10 @@ try {
     Write-EntitiesProgressToHost $pbxProgressCount
 
     $cosIds = Get-AvayaEntities @('clist station', 'f8002ff00') $stream
+    $pbxProgressCount++
+    Write-EntitiesProgressToHost $pbxProgressCount
+
+    $trunkGroupIds = Invoke-CommandOnAyavaSshStream @('clist trunk-group', 'f800bff00') $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
