@@ -62,10 +62,6 @@ function Get-AvayaEntities {
     $retry = 0
     $streamOut = Write-CommandsToSshStream $Commands $ShellStream
     
-    if ([string]::IsNullOrEmpty($streamOut)) {
-        throw "$Commands isn't returning a response. Exiting..."
-    }
-
     while (($streamOut).Contains('Terminator received but no command active') -and $retry -le 3) {
         Start-Sleep -s 1
         $streamOut = Write-CommandsToSshStream $Commands $ShellStream
@@ -100,6 +96,10 @@ function Write-CommandsToSshStream {
         $retry++
     }
 
+    if ([string]::IsNullOrEmpty($streamOut)) {
+        throw "$Commands isn't returning a response. Exiting..."
+    }
+    
     return $streamOut
 }
 
