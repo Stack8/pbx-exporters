@@ -147,7 +147,7 @@ try {
     $vectorIds = Invoke-CommandOnAyavaSshStream @('clist vector', 'f0001ff01') $stream
     Get-AvayaSubEntities $vectorIds 'Vectors' 'cdisplay vector' $stream
 
-    $vdnIds = Invoke-CommandOnAyavaSshStream @('clist vdn', 'f8003ff02') $stream
+    $vdnIds = Invoke-CommandOnAyavaSshStream @('clist vdn', 'f8005ff01') $stream
     Get-AvayaSubEntities $vdnIds 'VDNs' 'cdisplay vdn' $stream
 
     $ipNetworkRegionMonitorIds = Invoke-CommandOnAyavaSshStream @('clist ip-network-region monitor', 'f6c00ff00') $stream
