@@ -33,6 +33,32 @@ function Wait-UntilTerminalIsReady {
     }
 }
 
+function Write-CommandsToSshStream {
+    param (
+        [string[]]$Commands,
+        [Renci.SshNet.ShellStream]$ShellStream
+    )
+
+    $retry = 0
+    foreach ($Command in $Commands) {
+        $ShellStream.WriteLine($Command)
+    }
+    $ShellStream.WriteLine('t')
+
+    $streamOut = $ShellStream.Read()
+    while (($streamOut).length -eq 0 -and $retry -le 10) {
+        Start-Sleep -s 1
+        $streamOut = $ShellStream.Read()
+        $retry++
+    }
+
+    if ([string]::IsNullOrEmpty($streamOut)) {
+        throw "$Commands isn't returning a response. Exiting..."
+    }
+    
+    return $streamOut
+}
+
 function Get-AvayaSubEntities {
     param (
         $EntitiesId,
@@ -76,32 +102,6 @@ function Get-AvayaEntities {
     return $streamOut.Split("`n") | Where-Object { $_.Trim("") -and $Commands -notcontains $_ -and $_ -ne 'n' -and $_ -ne 't' }
 }
 
-function Write-CommandsToSshStream {
-    param (
-        [string[]]$Commands,
-        [Renci.SshNet.ShellStream]$ShellStream
-    )
-
-    $retry = 0
-    foreach ($Command in $Commands) {
-        $ShellStream.WriteLine($Command)
-    }
-    $ShellStream.WriteLine('t')
-
-    $streamOut = $ShellStream.Read()
-
-    while (($streamOut).length -eq 0 -and $retry -le 10) {
-        Start-Sleep -s 2
-        $streamOut = $ShellStream.Read()
-        $retry++
-    }
-
-    if ([string]::IsNullOrEmpty($streamOut)) {
-        throw "$Commands isn't returning a response. Exiting..."
-    }
-    
-    return $streamOut
-}
 
 function Write-EntitiesProgressToHost {
     param (
@@ -273,7 +273,7 @@ try {
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    $trunkGroupIds = Invoke-CommandOnAyavaSshStream @('clist trunk-group', 'f800bff00') $stream
+    $trunkGroupIds = Get-AvayaEntities @('clist trunk-group', 'f800bff00') $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
