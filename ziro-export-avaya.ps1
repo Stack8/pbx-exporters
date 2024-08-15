@@ -110,17 +110,6 @@ $sshsession = $null;
 $stream = $null;
 
 try {
-    if (-not (Get-Module Posh-SSH -ListAvailable)) {
-        $confirmation = Read-Host "Posh-SSH module needs to be installed in order to run this script, do you want to install it? [y/n]"
-        while ($confirmation -ne "y") {
-            if ($confirmation -eq 'n') { exit }
-            $confirmation = Read-Host "Posh-SSH module needs to be installed in order to run this script, do you want to install it?? [y/n]"
-        }
-        Install-Module Posh-SSH -Scope CurrentUser -Force
-    }
-
-    Import-Module Posh-SSH
-
     $serverUrl = Read-Host 'Avaya FQDN or IP Address (avayacm.mycompany.com)'
     $credential = Get-Credential -Message 'Enter username and password'
 
