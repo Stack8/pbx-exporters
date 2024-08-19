@@ -1,3 +1,4 @@
 *.zip
 output-unity/
+output-avaya/
 .DS_Store
