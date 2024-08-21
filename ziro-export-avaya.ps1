@@ -113,7 +113,7 @@ try {
     $serverUrl = Read-Host 'Avaya FQDN or IP Address (avayacm.mycompany.com)'
     $credential = Get-Credential -Message 'Enter username and password'
 
-    $sshsession = New-SSHSession -ComputerName $serverurl -Credential $credential -Port 5022
+    $sshsession = New-SSHSession -ComputerName $serverurl -Credential $credential -Port 5022 -AcceptKey
     $stream = New-SSHShellStream -SSHSession $sshsession
 
     New-Item -Name "output-avaya" -ItemType Directory -Force | Out-Null
