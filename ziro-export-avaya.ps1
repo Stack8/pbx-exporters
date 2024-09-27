@@ -108,16 +108,24 @@ function Write-EntitiesProgressToHost {
 
 $sshsession = $null;
 $stream = $null;
+$isExportCdr = $false;
 
 try {
     $serverUrl = Read-Host 'Avaya FQDN or IP Address (avayacm.mycompany.com)'
     $credential = Get-Credential -Message 'Enter username and password'
 
+    New-Item -Name "output-avaya" -ItemType Directory -Force | Out-Null
+    New-Item -ItemType File -Name "output-avaya/avaya.txt" -Force | Out-Null
+    New-Item -Name "output-avaya/CDR" -ItemType Directory -Force | Out-Null
+
+    $answer = Read-Host "Do you want to also export CDRs information [y/n]? "
+    if ($answer -eq 'y') { 
+        $isExportCdr = $true;
+    }
+
     $sshsession = New-SSHSession -ComputerName $serverurl -Credential $credential -Port 5022 -AcceptKey
     $stream = New-SSHShellStream -SSHSession $sshsession
 
-    New-Item -Name "output-avaya" -ItemType Directory -Force | Out-Null
-    New-Item -ItemType File -Name "output-avaya/avaya.txt" -Force | Out-Null
 
     Wait-UntilTerminalIsReady $stream
 
