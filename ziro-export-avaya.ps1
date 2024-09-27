@@ -106,26 +106,32 @@ function Write-EntitiesProgressToHost {
     Write-Progress -activity "Gathering PBX information..." -status "Fetched: $PbxProgressCount of 42" -percentComplete (($PbxProgressCount / 42) * 100)
 }
 
+function Get-CdrInformation {
+    param (
+        [string[]]$ServerUrl
+    )
+    $answer = Read-Host "Do you want to also export CDRs information [y/n]? "
+    if ($answer -eq 'y') { 
+        New-Item -Name "output-avaya/CDR" -ItemType Directory -Force | Out-Null
+        $credential = Get-Credential -Message 'Enter CDR username and password'
+    } else {
+        Write-Output "Skipping CDRs export..."
+    }
+}
+
 $sshsession = $null;
 $stream = $null;
-$isExportCdr = $false;
-
 try {
     $serverUrl = Read-Host 'Avaya FQDN or IP Address (avayacm.mycompany.com)'
     $credential = Get-Credential -Message 'Enter username and password'
 
     New-Item -Name "output-avaya" -ItemType Directory -Force | Out-Null
     New-Item -ItemType File -Name "output-avaya/avaya.txt" -Force | Out-Null
-    New-Item -Name "output-avaya/CDR" -ItemType Directory -Force | Out-Null
 
-    $answer = Read-Host "Do you want to also export CDRs information [y/n]? "
-    if ($answer -eq 'y') { 
-        $isExportCdr = $true;
-    }
-
+    Get-CdrInformation $serverUrl
+    
     $sshsession = New-SSHSession -ComputerName $serverurl -Credential $credential -Port 5022 -AcceptKey
     $stream = New-SSHShellStream -SSHSession $sshsession
-
 
     Wait-UntilTerminalIsReady $stream
 
