@@ -103,7 +103,7 @@ function Write-EntitiesProgressToHost {
     param (
         [Int]$PbxProgressCount
     )
-    Write-Progress -activity "Gathering PBX information..." -status "Fetched: $PbxProgressCount of 41" -percentComplete (($PbxProgressCount / 41) * 100)
+    Write-Progress -activity "Gathering PBX information..." -status "Fetched: $PbxProgressCount of 42" -percentComplete (($PbxProgressCount / 42) * 100)
 }
 
 $sshsession = $null;
@@ -130,6 +130,10 @@ try {
     Wait-UntilTerminalIsReady $stream
 
     $pbxProgressCount = 0
+
+    Get-AvayaEntities 'cdisplay system-parameters cdr' $stream | Out-Null
+    $pbxProgressCount++
+    Write-EntitiesProgressToHost $pbxProgressCount
 
     Get-AvayaEntities 'clist hunt-group' $stream | Out-Null
     $pbxProgressCount++
