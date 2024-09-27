@@ -114,7 +114,8 @@ function Get-CdrInformation {
     if ($answer -eq 'y') { 
         New-Item -Name "output-avaya/CDR" -ItemType Directory -Force | Out-Null
         $credential = Get-Credential -Message 'Enter CDR username and password'
-    } else {
+    }
+    else {
         Write-Output "Skipping CDRs export..."
     }
 }
