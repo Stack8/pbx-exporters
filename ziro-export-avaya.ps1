@@ -115,13 +115,19 @@ function Get-CdrInformation {
     try {
         $answer = Read-Host "Do you want to also export CDRs information? [y/N]? "
         if ($answer -eq 'y') { 
-            $sftpCredential = Get-Credential -Message 'Enter CDR username and password'
-            $sftpSession = New-SFTPSession -ComputerName $ServerUrl -Credential $sftpCredential -AcceptKey
-            Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR" -Destination "./" -Force -SkipSymLink
-            
-            New-Item -Name "output-avaya/CDR" -ItemType Directory -Force | Out-Null
-            Move-Item -Path "var/home/ftp/*" -Destination "output-avaya/CDR" -Force
-            Remove-Item -Recurse -Force "var"
+            $credential = Get-Credential -Message 'Enter CDR username and password'
+            $sftpSession = New-SFTPSession -ComputerName $ServerUrl -Credential $credential -AcceptKey
+            Write-Output "Downloading CDRs..."
+
+            if ($IsLinux) {
+                Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR" -Destination "./output-avaya" -Force -SkipSymLink
+                New-Item -Name "./output-avaya/CDR" -ItemType Directory -Force | Out-Null
+                Move-Item -Path "./output-avaya/var/home/ftp/*" -Destination "./output-avaya/CDR" -Force
+                Remove-Item -Recurse -Force "./output-avaya/var"
+            }
+            else {
+                Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR/" -Destination "output-avaya/" -Force -SkipSymLink
+            }
         }
         else {
             Write-Output "Skipping CDRs export..."
