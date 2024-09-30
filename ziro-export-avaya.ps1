@@ -137,7 +137,7 @@ $sshsession = $null;
 $stream = $null;
 try {
     $serverUrl = Read-Host 'Avaya FQDN or IP Address (avayacm.mycompany.com)'
-    # $credential = Get-Credential -Message 'Enter username and password'
+    $credential = Get-Credential -Message 'Enter username and password'
 
     New-Item -Name "output-avaya" -ItemType Directory -Force | Out-Null
     New-Item -ItemType File -Name "output-avaya/avaya.txt" -Force | Out-Null
