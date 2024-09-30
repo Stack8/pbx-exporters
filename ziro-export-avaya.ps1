@@ -115,8 +115,8 @@ function Get-CdrInformation {
     try {
         $answer = Read-Host "Do you want to also export CDRs information? [y/N]? "
         if ($answer -eq 'y') { 
-            $credential = Get-Credential -Message 'Enter CDR username and password'
-            $sftpSession = New-SFTPSession -ComputerName $ServerUrl -Credential $Credential -AcceptKey
+            $sftpCredential = Get-Credential -Message 'Enter CDR username and password'
+            $sftpSession = New-SFTPSession -ComputerName $ServerUrl -Credential $sftpCredential -AcceptKey
             Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR" -Destination "./" -Force -SkipSymLink
             
             New-Item -Name "output-avaya/CDR" -ItemType Directory -Force | Out-Null
