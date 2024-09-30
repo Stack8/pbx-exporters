@@ -119,7 +119,6 @@ function Get-CdrInformation {
             $sftpSession = New-SFTPSession -ComputerName $ServerUrl -Credential $credential -AcceptKey
             Write-Output "Downloading CDRs..."
             Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR/" -Destination "output-avaya/" -Force -SkipSymLink
-            
         }
         else {
             Write-Output "Skipping CDRs export..."
