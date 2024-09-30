@@ -333,7 +333,7 @@ try {
     $ZipFileName = "avaya_" + (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + ".zip"
 
     Compress-Archive -Path output-avaya/* -DestinationPath $ZipFileName -Force 
-    Remove-Item -Path output-avaya -Recurse 
+    Remove-Item -Path output-avaya -Recurse -Force
     
     Write-Host "The script ran successfully" -ForegroundColor Green
     exit 0
