@@ -120,8 +120,8 @@ function Get-CdrInformation {
             Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR" -Destination "./" -Force -SkipSymLink
             
             New-Item -Name "output-avaya/CDR" -ItemType Directory -Force | Out-Null
-            Move-Item -Path "./var/home/ftp/*" -Destination "output-avaya/CDR" -Force
-            Remove-Item -Recurse -Force "./var"
+            Move-Item -Path "var/home/ftp/*" -Destination "output-avaya/CDR" -Force
+            Remove-Item -Recurse -Force "var"
         }
         else {
             Write-Output "Skipping CDRs export..."
