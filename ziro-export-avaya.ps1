@@ -117,13 +117,11 @@ function Get-CdrInformation {
         if ($answer -eq 'y') { 
             $credential = Get-Credential -Message 'Enter CDR username and password'
             $sftpSession = New-SFTPSession -ComputerName $ServerUrl -Credential $Credential -AcceptKey
-            $sftpLocation = Get-SFTPLocation -SFTPSession $sftpSession
-            Get-SFTPItem -SFTPSession $sftpSession -Path $sftpLocation -Destination "./" -Force -SkipSymLink
-            
+            Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR" -Destination "./" -Force -SkipSymLink
             
             New-Item -Name "output-avaya/CDR" -ItemType Directory -Force | Out-Null
-            Move-Item -Path "./$sftpLocation/*" -Destination "output-avaya/CDR" -Force
-            Remove-Item -Recurse -Force "./$sftpLocation/*"
+            Move-Item -Path "./var/home/ftp/*" -Destination "output-avaya/CDR" -Force
+            Remove-Item -Recurse -Force "./var"
         }
         else {
             Write-Output "Skipping CDRs export..."
