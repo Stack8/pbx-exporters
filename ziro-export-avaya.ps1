@@ -113,7 +113,7 @@ function Get-CdrInformation {
     $sftpSession = $null;
 
     try {
-        $answer = Read-Host "Do you want to also export CDRs information [y/n]? "
+        $answer = Read-Host "Do you want to also export CDRs information? [y/N]? "
         if ($answer -eq 'y') { 
             $credential = Get-Credential -Message 'Enter CDR username and password'
             $sftpSession = New-SFTPSession -ComputerName $ServerUrl -Credential $Credential -AcceptKey
