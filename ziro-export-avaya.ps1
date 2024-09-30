@@ -108,23 +108,38 @@ function Write-EntitiesProgressToHost {
 
 function Get-CdrInformation {
     param (
-        [string[]]$ServerUrl
+        [string]$ServerUrl
     )
-    $answer = Read-Host "Do you want to also export CDRs information [y/n]? "
-    if ($answer -eq 'y') { 
-        New-Item -Name "output-avaya/CDR" -ItemType Directory -Force | Out-Null
-        $credential = Get-Credential -Message 'Enter CDR username and password'
+    $sftpSession = $null;
+
+    try {
+        $answer = Read-Host "Do you want to also export CDRs information [y/n]? "
+        if ($answer -eq 'y') { 
+            $credential = Get-Credential -Message 'Enter CDR username and password'
+            $sftpSession = New-SFTPSession -ComputerName $ServerUrl -Credential $Credential -AcceptKey
+            $sftpLocation = Get-SFTPLocation -SFTPSession $sftpSession
+            Get-SFTPItem -SFTPSession $sftpSession -Path $sftpLocation -Destination "./" -Force -SkipSymLink
+            
+            
+            New-Item -Name "output-avaya/CDR" -ItemType Directory -Force | Out-Null
+            Move-Item -Path "./$sftpLocation/*" -Destination "output-avaya/CDR" -Force
+            Remove-Item -Recurse -Force "./$sftpLocation/*"
+        }
+        else {
+            Write-Output "Skipping CDRs export..."
+        }
     }
-    else {
-        Write-Output "Skipping CDRs export..."
+    finally {
+        if ($null -ne $sftpSession) {
+            Remove-SftpSession -SFTPSession $sftpSession | Out-Null
+        }
     }
 }
-
 $sshsession = $null;
 $stream = $null;
 try {
     $serverUrl = Read-Host 'Avaya FQDN or IP Address (avayacm.mycompany.com)'
-    $credential = Get-Credential -Message 'Enter username and password'
+    # $credential = Get-Credential -Message 'Enter username and password'
 
     New-Item -Name "output-avaya" -ItemType Directory -Force | Out-Null
     New-Item -ItemType File -Name "output-avaya/avaya.txt" -Force | Out-Null
