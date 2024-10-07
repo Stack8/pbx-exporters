@@ -103,25 +103,54 @@ function Write-EntitiesProgressToHost {
     param (
         [Int]$PbxProgressCount
     )
-    Write-Progress -activity "Gathering PBX information..." -status "Fetched: $PbxProgressCount of 41" -percentComplete (($PbxProgressCount / 41) * 100)
+    Write-Progress -activity "Gathering PBX information..." -status "Fetched: $PbxProgressCount of 42" -percentComplete (($PbxProgressCount / 42) * 100)
 }
 
+function Get-CdrInformation {
+    param (
+        [string]$ServerUrl
+    )
+    $sftpSession = $null;
+
+    try {
+        $answer = Read-Host "Do you want to also export CDRs information? [y/N]? "
+        if ($answer -eq 'y') { 
+            $credential = Get-Credential -Message 'Enter CDR username and password'
+            $sftpSession = New-SFTPSession -ComputerName $ServerUrl -Credential $credential -AcceptKey
+            Write-Output "Downloading CDRs..."
+            Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR/" -Destination "output-avaya/" -Force -SkipSymLink
+        }
+        else {
+            Write-Output "Skipping CDRs export..."
+        }
+    }
+    finally {
+        if ($null -ne $sftpSession) {
+            Remove-SftpSession -SFTPSession $sftpSession | Out-Null
+        }
+    }
+}
 $sshsession = $null;
 $stream = $null;
-
 try {
     $serverUrl = Read-Host 'Avaya FQDN or IP Address (avayacm.mycompany.com)'
-    $credential = Get-Credential -Message 'Enter username and password'
-
-    $sshsession = New-SSHSession -ComputerName $serverurl -Credential $credential -Port 5022 -AcceptKey
-    $stream = New-SSHShellStream -SSHSession $sshsession
+    $credential = Get-Credential -Message 'Enter administrator username and password'
 
     New-Item -Name "output-avaya" -ItemType Directory -Force | Out-Null
     New-Item -ItemType File -Name "output-avaya/avaya.txt" -Force | Out-Null
 
+    Get-CdrInformation $serverUrl
+    
+    $sshsession = New-SSHSession -ComputerName $serverurl -Credential $credential -Port 5022 -AcceptKey
+    $stream = New-SSHShellStream -SSHSession $sshsession
+
     Wait-UntilTerminalIsReady $stream
 
     $pbxProgressCount = 0
+
+    Get-AvayaEntities 'cdisplay system-parameters cdr' $stream | Out-Null
+    $pbxProgressCount++
+    Write-EntitiesProgressToHost $pbxProgressCount
 
     Get-AvayaEntities 'clist hunt-group' $stream | Out-Null
     $pbxProgressCount++
@@ -301,7 +330,7 @@ try {
     $ZipFileName = "avaya_" + (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + ".zip"
 
     Compress-Archive -Path output-avaya/* -DestinationPath $ZipFileName -Force 
-    Remove-Item -Path output-avaya -Recurse 
+    Remove-Item -Path output-avaya -Recurse -Force
     
     Write-Host "The script ran successfully" -ForegroundColor Green
     exit 0
