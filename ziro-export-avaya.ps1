@@ -68,7 +68,7 @@ function Get-AvayaSubEntities {
         $EntityId = $EntityId.substring(1)
 
         foreach ($Command in $Commands) {
-            Get-AvayaEntities "$Command $EntityId" $ShellStream | Out-Null
+            Write-AyavaOutPutToFile "$Command $EntityId" $ShellStream
         }
 
         $progressCount++
@@ -76,7 +76,28 @@ function Get-AvayaSubEntities {
     }
 }
 
-function Get-AvayaEntities {
+function Write-AyavaOutPutToFile {
+    param (
+        [string[]]$Commands,
+        [Renci.SshNet.ShellStream]$ShellStream
+    )
+    $retry = 0
+    $commandOutput = Write-CommandsToSshStream $Commands $ShellStream
+    
+    while (([string]::IsNullOrEmpty($commandOutput) -or ($commandOutput).Contains('Terminator received but no command active')) -and $retry -le 5) {
+        Start-Sleep -s 1
+        $commandOutput = Write-CommandsToSshStream $Commands $ShellStream
+        $retry++
+    }
+
+    if ($retry -gt 5) {
+        Write-Warning "Failed to get result for commands $Commands"
+    }
+
+    Add-Content -Path "output-avaya/avaya.txt" -Value $commandOutput
+}
+
+function Write-AyavaOutPutToFileAndGetEntities {
     param (
         [string[]]$Commands,
         [Renci.SshNet.ShellStream]$ShellStream
@@ -148,171 +169,171 @@ try {
 
     $pbxProgressCount = 0
 
-    Get-AvayaEntities 'cdisplay system-parameters cdr' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay system-parameters cdr' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist hunt-group' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist hunt-group' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist pickup-group' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist pickup-group' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay alias station' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay alias station' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay tenant 1' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay tenant 1' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay coverage remote 1' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay coverage remote 1' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay coverage remote 2' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay coverage remote 2' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay coverage remote 3' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay coverage remote 3' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay coverage remote 4' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay coverage remote 4' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay coverage remote 5' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay coverage remote 5' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay coverage remote 6' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay coverage remote 6' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay coverage remote 7' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay coverage remote 7' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay coverage remote 8' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay coverage remote 8' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay coverage remote 9' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay coverage remote 9' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay coverage remote 10' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay coverage remote 10' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay feature-access-codes' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay feature-access-codes' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
     
-    Get-AvayaEntities 'clist coverage path' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist coverage path' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay ip-network-map' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay ip-network-map' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'cdisplay capacity' $stream | Out-Null
+    Write-AyavaOutPutToFile 'cdisplay capacity' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist user-profiles' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist user-profiles' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist route-pattern' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist route-pattern' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist integrated-annc-boards' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist integrated-annc-boards' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
     
-    Get-AvayaEntities 'clist ars analysis' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist ars analysis' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist media-gateway' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist media-gateway' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist public-unknown-numbering' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist public-unknown-numbering' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist off-pbx-telephone station-mapping' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist off-pbx-telephone station-mapping' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist intercom-group' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist intercom-group' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist abbreviated-dialing personal' $stream |  Out-Null
+    Write-AyavaOutPutToFile 'clist abbreviated-dialing personal' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist station' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist station' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist trunk-group' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist trunk-group' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist vector' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist vector' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist vdn' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist vdn' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist ip-network-region monitor' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist ip-network-region monitor' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    Get-AvayaEntities 'clist announcement' $stream | Out-Null
+    Write-AyavaOutPutToFile 'clist announcement' $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    $extensionIds = Get-AvayaEntities @('clist station', 'f8005ff00') $stream
+    $extensionIds = Write-AyavaOutPutToFileAndGetEntities @('clist station', 'f8005ff00') $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    $corIds = Get-AvayaEntities @('clist station', 'f8001ff00') $stream
+    $corIds = Write-AyavaOutPutToFileAndGetEntities @('clist station', 'f8001ff00') $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    $cosIds = Get-AvayaEntities @('clist station', 'f8002ff00') $stream
+    $cosIds = Write-AyavaOutPutToFileAndGetEntities @('clist station', 'f8002ff00') $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    $trunkGroupIds = Get-AvayaEntities @('clist trunk-group', 'f800bff00') $stream
+    $trunkGroupIds = Write-AyavaOutPutToFileAndGetEntities @('clist trunk-group', 'f800bff00') $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    $vectorIds = Get-AvayaEntities @('clist vector', 'f0001ff01') $stream
+    $vectorIds = Write-AyavaOutPutToFileAndGetEntities @('clist vector', 'f0001ff01') $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    $vdnIds = Get-AvayaEntities @('clist vdn', 'f8005ff01') $stream
+    $vdnIds = Write-AyavaOutPutToFileAndGetEntities @('clist vdn', 'f8005ff01') $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    $ipNetworkRegionMonitorIds = Get-AvayaEntities @('clist ip-network-region monitor', 'f6c00ff00') $stream
+    $ipNetworkRegionMonitorIds = Write-AyavaOutPutToFileAndGetEntities @('clist ip-network-region monitor', 'f6c00ff00') $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
-    $announcementIds = Get-AvayaEntities @('clist announcement', 'f8005ff00') $stream
+    $announcementIds = Write-AyavaOutPutToFileAndGetEntities @('clist announcement', 'f8005ff00') $stream
     $pbxProgressCount++
     Write-EntitiesProgressToHost $pbxProgressCount
 
@@ -325,7 +346,7 @@ try {
     Get-AvayaSubEntities $ipNetworkRegionMonitorIds 'IP Network Regions' 'cstatus ip-network-region' $stream
     Get-AvayaSubEntities $announcementIds 'Announcements' 'cdisplay announcement' $stream
 
-    Get-AvayaEntities "clogoff" $stream | Out-Null
+    Write-AyavaOutPutToFile "clogoff" $stream
 
     $ZipFileName = "avaya_" + (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + ".zip"
 
