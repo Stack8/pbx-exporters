@@ -1,0 +1,4 @@
+Source Phone Number,Source user,Destination Phone Number,Destination user,Call Duration (in seconds),Start time (in ISO8601)
+5001,jdoe,5002,msmith,525,2024-10-29T05:50:12Z
+5001,jdoe,15149408284,,384,2024-10-29T05:50:12Z
+5002,msmith,15149408000,,1084,2024-10-29T05:50:12Z
