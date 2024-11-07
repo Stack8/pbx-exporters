@@ -143,7 +143,7 @@ function Get-CdrInformation {
             Write-Output "Downloading CDRs..."
             Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR/" -Destination "avaya_cdr/" -Force -SkipSymLink
 
-            Compress-Archive -Path avaya_cdr/* -DestinationPath $ZipFileName -Force 
+            Compress-Archive -Path avaya_cdr/* -DestinationPath avaya_cdr.zip -Force 
             Remove-Item -Path avaya_cdr -Recurse -Force
         }
         else {
