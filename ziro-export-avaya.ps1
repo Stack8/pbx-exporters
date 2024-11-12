@@ -129,17 +129,25 @@ function Write-EntitiesProgressToHost {
 
 function Get-CdrInformation {
     param (
-        [string]$ServerUrl
+        [string]$ServerUrl,
+        [string]$Date
     )
     $sftpSession = $null;
 
     try {
         $answer = Read-Host "Do you want to also export CDRs information? [y/N]? "
         if ($answer -eq 'y') { 
+            New-Item -Name "avaya_cdr" -ItemType Directory -Force | Out-Null
+            
             $credential = Get-Credential -Message 'Enter CDR username and password'
             $sftpSession = New-SFTPSession -ComputerName $ServerUrl -Credential $credential -AcceptKey
             Write-Output "Downloading CDRs..."
-            Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR/" -Destination "output-avaya/" -Force -SkipSymLink
+            Get-SFTPItem -SFTPSession $sftpSession -Path "/var/home/ftp/CDR/" -Destination "avaya_cdr/" -Force -SkipSymLink
+
+            $ZipFileName = "avaya_" + $date + "_cdr.zip"
+
+            Compress-Archive -Path avaya_cdr/* -DestinationPath $ZipFileName -Force 
+            Remove-Item -Path avaya_cdr -Recurse -Force
         }
         else {
             Write-Output "Skipping CDRs export..."
@@ -157,10 +165,12 @@ try {
     $serverUrl = Read-Host 'Avaya FQDN or IP Address (avayacm.mycompany.com)'
     $credential = Get-Credential -Message 'Enter administrator username and password'
 
+    $date = (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString()
+
     New-Item -Name "output-avaya" -ItemType Directory -Force | Out-Null
     New-Item -ItemType File -Name "output-avaya/avaya.txt" -Force | Out-Null
 
-    Get-CdrInformation $serverUrl
+    Get-CdrInformation $serverUrl $date
     
     $sshsession = New-SSHSession -ComputerName $serverurl -Credential $credential -Port 5022 -AcceptKey
     $stream = New-SSHShellStream -SSHSession $sshsession
@@ -348,7 +358,7 @@ try {
 
     Write-AyavaOutPutToFile "clogoff" $stream
 
-    $ZipFileName = "avaya_" + (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + ".zip"
+    $ZipFileName = "avaya_" + $date + ".zip"
 
     Compress-Archive -Path output-avaya/* -DestinationPath $ZipFileName -Force 
     Remove-Item -Path output-avaya -Recurse -Force
