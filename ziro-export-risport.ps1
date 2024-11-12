@@ -156,7 +156,11 @@ function Get-DeviceRegistrationStatuses {
 
          foreach ($nodeDevices in $devicesPerNode) {
             $nodeDevices.item | Select-Object -Property Name, Status, StatusReason, TimeStamp 
-            | ForEach-Object { $registrationStatuses.Add($_.Name, $_) }
+            | ForEach-Object { 
+               if (!$registrationStatuses.Contains($_.Name)) {
+                  $registrationStatuses.Add($_.Name, $_) 
+               }
+            }
          }
       }
 
