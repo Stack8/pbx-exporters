@@ -12,15 +12,15 @@ class CucmConnector {
       $this.Credential = $Credential
    }
 
-   [System.Xml.XmlDocument] ListPhone([int]$Skip, [int]$First, [string]$ApiVersion) {
+   [System.Xml.XmlDocument] ListPhone([int]$Skip, [int]$First) {
       $uri = "{0}/axl/" -f $this.BaseUrl
       $headers = @{
          'Content-Type' = 'text/xml'
-         'SOAPAction'   = "CUCM:DB ver=${ApiVersion} listPhone"
+         'SOAPAction'   = 'CUCM:DB ver=11.5 listPhone'
       }
 
       $requestBody = @"
-      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns="http://www.cisco.com/AXL/API/${ApiVersion}">
+      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns="http://www.cisco.com/AXL/API/11.5">
          <soapenv:Header/>
          <soapenv:Body>
             <ns:listPhone>
@@ -107,20 +107,19 @@ class CucmConnector {
 
 function Get-Devices {
    param (
-      [CucmConnector]$CucmConnector,
-      [string]$ApiVersion
+      [CucmConnector]$CucmConnector
    )
 
    $allDevices = New-Object System.Collections.Generic.List[object]
    $skip = 0
    $first = 2000
-   $response = $CucmConnector.ListPhone($skip, $first, $ApiVersion)
+   $response = $CucmConnector.ListPhone($skip, $first)
    
    while (!($response.GetElementsByTagName('return').IsEmpty)) {
       $pageDevices = [object[]]($response.GetElementsByTagName('return').phone)
       $allDevices.AddRange($pageDevices)
       $skip += $first
-      $response = $CucmConnector.ListPhone($skip, $first, $ApiVersion)
+      $response = $CucmConnector.ListPhone($skip, $first)
    }
 
    return $allDevices
@@ -179,17 +178,7 @@ $cucmConnector = [CucmConnector]::new($serverUrl, $credential)
 
 try {
    Write-Host "Fetching devices from CUCM server..."
-
-   try {
-      $devices = Get-Devices -CucmConnector $cucmConnector -ApiVersion '11.5'
-   } catch {
-      if ($_.ToString().Contains('Incorrect axl version. Supported axl versions are 12.x, 14.0 and 15.0')) {
-         $devices = Get-Devices -CucmConnector $cucmConnector -ApiVersion '15.0'
-      } else {
-         throw
-      }
-   }
-   
+   $devices = Get-Devices -CucmConnector $cucmConnector
    Write-Host "Found [$($devices.Length)] devices"
    Write-Host "Getting device registration statuses..."
    $registrationStatuses = Get-DeviceRegistrationStatuses -DeviceNames $devices.name -CucmConnector $cucmConnector
