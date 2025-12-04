@@ -1,5 +1,7 @@
 #Requires -Version 7.0
 
+$NumberOfCallsToMakeInParrallel = 10;
+
 function Invoke-GetOnUnity {
     param (
         [string]$UnityHost,
@@ -91,6 +93,8 @@ $Error.Clear()
 
 $UnityHost = Read-Host "Please enter the Unity server URL (ex: https://myunity.com)"
 $Credential = Get-Credential -Message "Insert Unity Username and Password"
+
+Write-Output "Running script with $NumberOfCallsToMakeInParrallel number of calls to make in parallel..."
 
 $ProgressCount = 0
 
