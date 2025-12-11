@@ -64,7 +64,6 @@ function Invoke-GetOnUnity {
 # and starts new jobs as slots become available. Collects results and saves
 # JSON output to specified files.
 function Invoke-GetOnUnityWithLimit {
-
     param([array]$AsyncJobs)
     
     $ActiveJobs = @()
