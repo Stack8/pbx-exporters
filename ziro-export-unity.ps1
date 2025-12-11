@@ -36,6 +36,7 @@ function Invoke-GetOnUnity {
         $Resources = $Response.$ResName
         $TotalResources = [int]$Response."@total"
         $ResourcesArray += $Resources
+        Write-Host "Fetched page 1 of $ResName ($($ResourcesArray.Count) of $TotalResources)"
         
         while ($ResourcesArray.Count -lt $TotalResources) {
             $PageNumber++
@@ -43,6 +44,7 @@ function Invoke-GetOnUnity {
             $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Cred
             $Resources = $Response.$ResName
             $ResourcesArray += $Resources
+            Write-Host "Fetched page $PageNumber of $ResName ($($ResourcesArray.Count) of $TotalResources)"
         }
         
         return $ResourcesArray
@@ -121,8 +123,6 @@ $Error.Clear()
 $UnityHost = Read-Host "Please enter the Unity server URL (ex: https://myunity.com)"
 $Credential = Get-Credential -Message "Insert Unity Username and Password"
 
-Write-Output "Fetching 9 resource collections in parallel..."
-
 $ProgressCount = 0
 
 New-Item -Name "output-unity" -ItemType Directory -Force | Out-Null
@@ -148,6 +148,7 @@ try {
     $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedules' $Credential 'schedules/list.json' 'Schedule'
     $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet'
 
+    Write-Output "Fetching 9 resource collections in parallel..."
     $InitialResults = Wait-AsyncGetOnUnity $InitialJobs
 
     $CallHandlers = $InitialResults['/vmrest/handlers/callhandlers']
@@ -189,6 +190,7 @@ try {
         Write-Progress -activity "Getting distribution lists information..." -status "Fetched: $ProgressCount of $($DistributionLists.Count)" -percentComplete (($ProgressCount / $DistributionLists.Count) * 100)
     }
     $ProgressCount = 0
+    Write-Output "Finished getting distribution lists"
 
     foreach ($InterviewHandler in $InterviewHandlers) {
         $FolderName = "interviewhandlers/" + $InterviewHandler.ObjectId
@@ -198,6 +200,7 @@ try {
         Write-Progress -activity "Getting interview handlers information..." -status "Fetched: $ProgressCount of $($InterviewHandlers.Count)" -percentComplete (($ProgressCount / $InterviewHandlers.Count) * 100)
     }
     $ProgressCount = 0
+    Write-Output "Finished getting interview handlers"
 
     foreach ($RoutingRule in $RoutingRules) {
         $FolderName = "routingrules/" + $RoutingRule.ObjectId
@@ -207,6 +210,7 @@ try {
         Write-Progress -activity "Getting routing rules information..." -status "Fetched: $ProgressCount of $($RoutingRules.Count)" -percentComplete (($ProgressCount / $RoutingRules.Count) * 100)
     }
     $ProgressCount = 0
+    Write-Output "Finished getting routing rules"
 
     foreach ($Schedule in $Schedules) {
         $FolderName = "schedules/" + $Schedule.ObjectId
@@ -216,6 +220,7 @@ try {
         Write-Progress -activity "Getting schedules information..." -status "Fetched: $ProgressCount of $($Schedules.Count)" -percentComplete (($ProgressCount / $Schedules.Count) * 100)
     }
     $ProgressCount = 0
+    Write-Output "Finished getting schedules"
 
     foreach ($ScheduleSet in $ScheduleSets) {
         $FolderName = "schedulesets/" + $ScheduleSet.ObjectId
@@ -224,10 +229,13 @@ try {
         $ProgressCount++
         Write-Progress -activity "Getting schedule sets information..." -status "Fetched: $ProgressCount of $($ScheduleSets.Count)" -percentComplete (($ProgressCount / $ScheduleSets.Count) * 100)
     }
+    Write-Output "Finished getting schedule sets"
 
     $ZipFileName = (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + "_" + ([System.Uri]$UnityHost).Host + ".zip"
 
+    Write-Output "Creating archive: $ZipFileName"
     Compress-Archive -Path output-unity/* -DestinationPath $ZipFileName -Force 
+    Write-Output "Removing temporary output directory"
     Remove-Item -Path output-unity -Recurse 
 
     Write-Host "The script ran successfully" -ForegroundColor Green
