@@ -1,17 +1,12 @@
 #Requires -Version 7.0
 
-$MaxConcurrentRestCalls = 10;
-$Runspace = [runspacefactory]::CreateRunspacePool(1, $MaxConcurrentRestCalls)
-$Runspace.Open()
-
 function Invoke-GetOnUnity {
     param (
         [string]$UnityHost,
         [string]$Endpoint,
         [PSCredential]$Credential,
         [string]$OutputFileName,
-        [string]$ResourceName,
-        [bool]$Asynchronous = $false
+        [string]$ResourceName
     )
 
     $ScriptBlock = {
@@ -53,40 +48,12 @@ function Invoke-GetOnUnity {
         return $ResourcesArray
     }
     
-    if ($Asynchronous) {
-        $Job = $Runspace.CreatePowerShell()
-        $Job.AddScript($ScriptBlock).AddArgument($UnityHost).AddArgument($Endpoint).AddArgument($Credential).AddArgument($ResourceName) | Out-Null
-        $AsyncResult = $Job.BeginInvoke()
-        
-        return @{
-            Job            = $Job
-            AsyncResult    = $AsyncResult
-            Endpoint       = $Endpoint
-            OutputFileName = $OutputFileName
-            IsAsync        = $true
-        }
-    }
-    else {
-        try {
-            $ResourcesArray = & $ScriptBlock -Host $UnityHost -Endpoint $Endpoint -Cred $Credential -ResName $ResourceName
-        }
-        catch {
-            if ($_ -match "Wrong credentials") {
-                Write-Host "Wrong credentials or insufficient permissions." -ForegroundColor Red
-                Remove-Item -Path output-unity -Recurse
-                exit 1
-            }
-            throw $_
-        }
-        
-        $JsonOutput = ConvertTo-Json $ResourcesArray
-        
-        if ($OutputFileName) {
-            $OutputFilePath = "output-unity/" + $OutputFileName
-            $JsonOutput | Out-File -FilePath $OutputFilePath
-        }
-        
-        return $JsonOutput | ConvertFrom-Json
+    $Job = Start-Job -ScriptBlock $ScriptBlock -ArgumentList $UnityHost, $Endpoint, $Credential, $ResourceName
+    
+    return @{
+        Job            = $Job
+        Endpoint       = $Endpoint
+        OutputFileName = $OutputFileName
     }
 }
 
@@ -99,7 +66,7 @@ function Wait-AsyncGetOnUnity {
     
     foreach ($JobWrapper in $AsyncJobs) {
         try {
-            $ResourcesArray = $JobWrapper.Job.EndInvoke($JobWrapper.AsyncResult)
+            $ResourcesArray = $JobWrapper.Job | Wait-Job | Receive-Job
             $JsonOutput = ConvertTo-Json $ResourcesArray
             
             if ($JobWrapper.OutputFileName) {
@@ -112,12 +79,12 @@ function Wait-AsyncGetOnUnity {
         catch {
             Write-Error "Error fetching endpoint $($JobWrapper.Endpoint): $_"
             if ($_ -match "Wrong credentials") {
-                Remove-Item -Path output-unity -Recurse
+                Remove-Item -Path output-unity -Recurse -ErrorAction SilentlyContinue
                 exit 1
             }
         }
         finally {
-            $JobWrapper.Job.Dispose()
+            Remove-Job -Job $JobWrapper.Job -ErrorAction SilentlyContinue
         }
     }
     
@@ -177,15 +144,15 @@ New-Item -Name "output-unity/schedules" -ItemType Directory -Force | Out-Null
 New-Item -Name "output-unity/schedulesets" -ItemType Directory -Force | Out-Null
 
 $InitialJobs = @()
-$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/users/' $Credential 'users/list.json' 'User' -Asynchronous $true
-$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler' -Asynchronous $true
-$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler' -Asynchronous $true
-$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler' -Asynchronous $true
-$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList' -Asynchronous $true
-$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule' -Asynchronous $true
-$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/partitions' $Credential 'partitions/list.json' 'Partition' -Asynchronous $true
-$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedules' $Credential 'schedules/list.json' 'Schedule' -Asynchronous $true
-$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet' -Asynchronous $true
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/users/' $Credential 'users/list.json' 'User'
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler'
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler'
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler'
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList'
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule'
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/partitions' $Credential 'partitions/list.json' 'Partition'
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedules' $Credential 'schedules/list.json' 'Schedule'
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet'
 
 Write-Output "Fetching 9 resource collections in parallel..."
 $InitialResults = Wait-AsyncGetOnUnity $InitialJobs
