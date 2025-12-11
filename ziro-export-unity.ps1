@@ -1,16 +1,17 @@
 #Requires -Version 7.0
 
+$MaxConcurrentJobs = 10
+
 function Invoke-GetOnUnityWithLimit {
     param(
-        [array]$AsyncJobs,
-        [int]$MaxConcurrent = 10
+        [array]$AsyncJobs
     )
     
     $ActiveJobs = @()
     $JobIndex = 0
     
     # Start initial batch of jobs up to MaxConcurrent limit
-    while ($JobIndex -lt $AsyncJobs.Count -and $ActiveJobs.Count -lt $MaxConcurrent) {
+    while ($JobIndex -lt $AsyncJobs.Count -and $ActiveJobs.Count -lt $MaxConcurrentJobs) {
         $ActiveJobs += $AsyncJobs[$JobIndex]
         $JobIndex++
     }
@@ -33,7 +34,7 @@ function Invoke-GetOnUnityWithLimit {
         $ActiveJobs = $StillRunning
         
         # Start new jobs if there are slots available
-        while ($JobIndex -lt $AsyncJobs.Count -and $ActiveJobs.Count -lt $MaxConcurrent) {
+        while ($JobIndex -lt $AsyncJobs.Count -and $ActiveJobs.Count -lt $MaxConcurrentJobs) {
             $ActiveJobs += $AsyncJobs[$JobIndex]
             $JobIndex++
         }
@@ -129,8 +130,8 @@ function Export-CallHandlers {
         Write-Progress -activity "Queuing call handlers information..." -status "Queued: $ProgressCount of $($CallHandlers.Count)" -percentComplete (($ProgressCount / $CallHandlers.Count) * 100)
     }
     
-    Write-Output "Processing $($PendingJobs.Count) call handler jobs with max 10 concurrent..."
-    Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
+    Write-Output "Processing $($PendingJobs.Count) call handler jobs with max $MaxConcurrentJobs concurrent..."
+    Invoke-GetOnUnityWithLimit $PendingJobs | Out-Null
     Write-Output "Finished getting call handlers"
 }
 
@@ -149,8 +150,8 @@ function Export-DistributionLists {
         Write-Progress -activity "Queuing distribution lists information..." -status "Queued: $ProgressCount of $($DistributionLists.Count)" -percentComplete (($ProgressCount / $DistributionLists.Count) * 100)
     }
     
-    Write-Output "Processing $($PendingJobs.Count) distribution list jobs with max 10 concurrent..."
-    Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
+    Write-Output "Processing $($PendingJobs.Count) distribution list jobs with max $MaxConcurrentJobs concurrent..."
+    Invoke-GetOnUnityWithLimit $PendingJobs | Out-Null
     Write-Output "Finished getting distribution lists"
 }
 
@@ -169,8 +170,8 @@ function Export-InterviewHandlers {
         Write-Progress -activity "Queuing interview handlers information..." -status "Queued: $ProgressCount of $($InterviewHandlers.Count)" -percentComplete (($ProgressCount / $InterviewHandlers.Count) * 100)
     }
     
-    Write-Output "Processing $($PendingJobs.Count) interview handler jobs with max 10 concurrent..."
-    Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
+    Write-Output "Processing $($PendingJobs.Count) interview handler jobs with max $MaxConcurrentJobs concurrent..."
+    Invoke-GetOnUnityWithLimit $PendingJobs | Out-Null
     Write-Output "Finished getting interview handlers"
 }
 
@@ -189,8 +190,8 @@ function Export-RoutingRules {
         Write-Progress -activity "Queuing routing rules information..." -status "Queued: $ProgressCount of $($RoutingRules.Count)" -percentComplete (($ProgressCount / $RoutingRules.Count) * 100)
     }
     
-    Write-Output "Processing $($PendingJobs.Count) routing rule jobs with max 10 concurrent..."
-    Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
+    Write-Output "Processing $($PendingJobs.Count) routing rule jobs with max $MaxConcurrentJobs concurrent..."
+    Invoke-GetOnUnityWithLimit $PendingJobs | Out-Null
     Write-Output "Finished getting routing rules"
 }
 
@@ -209,8 +210,8 @@ function Export-Schedules {
         Write-Progress -activity "Queuing schedules information..." -status "Queued: $ProgressCount of $($Schedules.Count)" -percentComplete (($ProgressCount / $Schedules.Count) * 100)
     }
     
-    Write-Output "Processing $($PendingJobs.Count) schedule jobs with max 10 concurrent..."
-    Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
+    Write-Output "Processing $($PendingJobs.Count) schedule jobs with max $MaxConcurrentJobs concurrent..."
+    Invoke-GetOnUnityWithLimit $PendingJobs | Out-Null
     Write-Output "Finished getting schedules"
 }
 
@@ -229,8 +230,8 @@ function Export-ScheduleSets {
         Write-Progress -activity "Queuing schedule sets information..." -status "Queued: $ProgressCount of $($ScheduleSets.Count)" -percentComplete (($ProgressCount / $ScheduleSets.Count) * 100)
     }
     
-    Write-Output "Processing $($PendingJobs.Count) schedule set jobs with max 10 concurrent..."
-    Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
+    Write-Output "Processing $($PendingJobs.Count) schedule set jobs with max $MaxConcurrentJobs concurrent..."
+    Invoke-GetOnUnityWithLimit $PendingJobs | Out-Null
     Write-Output "Finished getting schedule sets"
 }
 
