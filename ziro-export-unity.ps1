@@ -1,64 +1,5 @@
 #Requires -Version 7.0
 
-function Invoke-GetOnUnity {
-    param (
-        [string]$UnityHost,
-        [string]$Endpoint,
-        [PSCredential]$Credential,
-        [string]$OutputFileName,
-        [string]$ResourceName
-    )
-
-    $ScriptBlock = {
-        param(
-            [string]$UnityHost,
-            [string]$Endpoint,
-            [PSCredential]$Cred,
-            [string]$ResName
-        )
-        
-        $PageNumber = 1
-        $Url = $UnityHost + $Endpoint + "?rowsPerPage=2000&pageNumber=" + $PageNumber
-        $Headers = @{ "Accept" = "application/json" }
-        
-        $ResourcesArray = @()
-        try {
-            $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Cred
-        }
-        catch {
-            $ResponseCode = $_.Exception.Response.StatusCode.value__
-            if ($ResponseCode -eq 401 -or $ResponseCode -eq 403) {
-                throw "Wrong credentials or insufficient permissions."
-            }
-            throw $_
-        }
-        
-        $Resources = $Response.$ResName
-        $TotalResources = [int]$Response."@total"
-        $ResourcesArray += $Resources
-        Write-Host "Fetched page 1 of $ResName ($($ResourcesArray.Count) of $TotalResources)"
-        
-        while ($ResourcesArray.Count -lt $TotalResources) {
-            $PageNumber++
-            $Url = $Host + $Endpoint + "?rowsPerPage=1&pageNumber=" + $PageNumber
-            $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Cred
-            $Resources = $Response.$ResName
-            $ResourcesArray += $Resources
-            Write-Host "Fetched page $PageNumber of $ResName ($($ResourcesArray.Count) of $TotalResources)"
-        }
-        
-        return $ResourcesArray
-    }
-    
-    $Job = Start-Job -ScriptBlock $ScriptBlock -ArgumentList $UnityHost, $Endpoint, $Credential, $ResourceName
-    
-    return @{
-        Job            = $Job
-        Endpoint       = $Endpoint
-        OutputFileName = $OutputFileName
-    }
-}
-
 function Invoke-GetOnUnityWithLimit {
     param(
         [array]$AsyncJobs,
@@ -101,25 +42,15 @@ function Invoke-GetOnUnityWithLimit {
         Start-Sleep -Milliseconds 100
     }
     
-    # Wait for any remaining jobs to complete
+    # Wait for any remaining jobs to complete and process results
+    $Results = @{}
+    
     foreach ($JobWrapper in $CompletedJobs) {
         if ($JobWrapper.Job.State -ne 'Completed' -and $JobWrapper.Job.State -ne 'Failed') {
             $JobWrapper.Job | Wait-Job | Out-Null
         }
-    }
-    
-    return $CompletedJobs
-}
-
-function Wait-AsyncGetOnUnity {
-    param(
-        [array]$AsyncJobs
-    )
-    
-    $Results = @{}
-    
-    foreach ($JobWrapper in $AsyncJobs) {
-        $ResourcesArray = $JobWrapper.Job | Wait-Job | Receive-Job -ErrorAction Stop
+        
+        $ResourcesArray = $JobWrapper.Job | Receive-Job -ErrorAction Stop
         
         if ($JobWrapper.Job.State -eq 'Failed') {
             $JobWrapper.Job.ChildJobs[0].Error | ForEach-Object { throw $_ }
@@ -137,6 +68,7 @@ function Wait-AsyncGetOnUnity {
     
     return $Results
 }
+
 
 function Export-Greetings {
     param (
@@ -199,7 +131,6 @@ function Export-CallHandlers {
     
     Write-Output "Processing $($PendingJobs.Count) call handler jobs with max 10 concurrent..."
     Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
-    Wait-AsyncGetOnUnity $PendingJobs | Out-Null
     Write-Output "Finished getting call handlers"
 }
 
@@ -220,7 +151,6 @@ function Export-DistributionLists {
     
     Write-Output "Processing $($PendingJobs.Count) distribution list jobs with max 10 concurrent..."
     Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
-    Wait-AsyncGetOnUnity $PendingJobs | Out-Null
     Write-Output "Finished getting distribution lists"
 }
 
@@ -241,7 +171,6 @@ function Export-InterviewHandlers {
     
     Write-Output "Processing $($PendingJobs.Count) interview handler jobs with max 10 concurrent..."
     Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
-    Wait-AsyncGetOnUnity $PendingJobs | Out-Null
     Write-Output "Finished getting interview handlers"
 }
 
@@ -262,7 +191,6 @@ function Export-RoutingRules {
     
     Write-Output "Processing $($PendingJobs.Count) routing rule jobs with max 10 concurrent..."
     Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
-    Wait-AsyncGetOnUnity $PendingJobs | Out-Null
     Write-Output "Finished getting routing rules"
 }
 
@@ -283,7 +211,6 @@ function Export-Schedules {
     
     Write-Output "Processing $($PendingJobs.Count) schedule jobs with max 10 concurrent..."
     Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
-    Wait-AsyncGetOnUnity $PendingJobs | Out-Null
     Write-Output "Finished getting schedules"
 }
 
@@ -304,7 +231,6 @@ function Export-ScheduleSets {
     
     Write-Output "Processing $($PendingJobs.Count) schedule set jobs with max 10 concurrent..."
     Invoke-GetOnUnityWithLimit $PendingJobs -MaxConcurrent 10 | Out-Null
-    Wait-AsyncGetOnUnity $PendingJobs | Out-Null
     Write-Output "Finished getting schedule sets"
 }
 
@@ -312,8 +238,6 @@ $Error.Clear()
 
 $UnityHost = Read-Host "Please enter the Unity server URL (ex: https://myunity.com)"
 $Credential = Get-Credential -Message "Insert Unity Username and Password"
-
-$ProgressCount = 0
 
 New-Item -Name "output-unity" -ItemType Directory -Force | Out-Null
 New-Item -Name "output-unity/users" -ItemType Directory -Force | Out-Null
@@ -339,7 +263,7 @@ try {
     $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet'
 
     Write-Output "Fetching 9 resource collections in parallel..."
-    $InitialResults = Wait-AsyncGetOnUnity $InitialJobs
+    $InitialResults = Invoke-GetOnUnityWithLimit $InitialJobs
 
     $CallHandlers = $InitialResults['/vmrest/handlers/callhandlers']
     $InterviewHandlers = $InitialResults['/vmrest/handlers/interviewhandlers']
