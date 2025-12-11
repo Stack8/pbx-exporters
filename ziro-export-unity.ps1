@@ -59,68 +59,71 @@ function Invoke-GetOnUnity {
     }
 }
 
+# Manages concurrent execution of async jobs with a configurable limit
+# Starts jobs in batches up to $MaxConcurrentJobs, monitors their progress,
+# and starts new jobs as slots become available. Collects results and saves
+# JSON output to specified files.
 function Invoke-GetOnUnityWithLimit {
-    param(
-        [array]$AsyncJobs
-    )
+
+    param([array]$AsyncJobs)
     
     $ActiveJobs = @()
     $JobIndex = 0
     
-    # Start initial batch of jobs up to MaxConcurrent limit
+    # Start initial batch of jobs
     while ($JobIndex -lt $AsyncJobs.Count -and $ActiveJobs.Count -lt $MaxConcurrentJobs) {
-        $ActiveJobs += $AsyncJobs[$JobIndex]
-        $JobIndex++
+        $ActiveJobs += $AsyncJobs[$JobIndex++]
     }
     
     $CompletedJobs = @()
     
-    # Process jobs with concurrency limit
+    # Monitor and manage job concurrency
     while ($ActiveJobs.Count -gt 0) {
-        # Check for completed jobs
         $StillRunning = @()
+        
         foreach ($JobWrapper in $ActiveJobs) {
-            if ($JobWrapper.Job.State -eq 'Completed' -or $JobWrapper.Job.State -eq 'Failed') {
+            if ($JobWrapper.Job.State -in @('Completed', 'Failed')) {
                 $CompletedJobs += $JobWrapper
-            }
-            else {
+            } else {
                 $StillRunning += $JobWrapper
             }
         }
         
         $ActiveJobs = $StillRunning
         
-        # Start new jobs if there are slots available
+        # Start new jobs if slots are available
         while ($JobIndex -lt $AsyncJobs.Count -and $ActiveJobs.Count -lt $MaxConcurrentJobs) {
-            $ActiveJobs += $AsyncJobs[$JobIndex]
-            $JobIndex++
+            $ActiveJobs += $AsyncJobs[$JobIndex++]
         }
         
-        # Small sleep to prevent busy waiting
         Start-Sleep -Milliseconds 100
     }
     
-    # Wait for any remaining jobs to complete and process results
+    # Process completed jobs and save results
     $Results = @{}
     
     foreach ($JobWrapper in $CompletedJobs) {
-        if ($JobWrapper.Job.State -ne 'Completed' -and $JobWrapper.Job.State -ne 'Failed') {
+        # Ensure job is complete
+        if ($JobWrapper.Job.State -notin @('Completed', 'Failed')) {
             $JobWrapper.Job | Wait-Job | Out-Null
         }
         
+        # Get results
         $ResourcesArray = $JobWrapper.Job | Receive-Job -ErrorAction Stop
         
+        # Handle failures
         if ($JobWrapper.Job.State -eq 'Failed') {
             $JobWrapper.Job.ChildJobs[0].Error | ForEach-Object { throw $_ }
         }
         
+        # Save to file if specified
         $JsonOutput = ConvertTo-Json $ResourcesArray
-        
         if ($JobWrapper.OutputFileName) {
             $OutputFilePath = "output-unity/" + $JobWrapper.OutputFileName
             $JsonOutput | Out-File -FilePath $OutputFilePath
         }
         
+        # Store results by endpoint
         $Results[$JobWrapper.Endpoint] = $JsonOutput | ConvertFrom-Json
     }
     
