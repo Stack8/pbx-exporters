@@ -2,6 +2,63 @@
 
 $MaxConcurrentJobs = 10
 
+function Invoke-GetOnUnity {
+    param (
+        [string]$UnityHost,
+        [string]$Endpoint,
+        [PSCredential]$Credential,
+        [string]$OutputFileName,
+        [string]$ResourceName
+    )
+
+    $ScriptBlock = {
+        param(
+            [string]$UnityHost,
+            [string]$Endpoint,
+            [PSCredential]$Cred,
+            [string]$ResName
+        )
+        
+        $PageNumber = 1
+        $Url = $UnityHost + $Endpoint + "?rowsPerPage=2000&pageNumber=" + $PageNumber
+        $Headers = @{ "Accept" = "application/json" }
+        
+        $ResourcesArray = @()
+        try {
+            $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Cred
+        }
+        catch {
+            $ResponseCode = $_.Exception.Response.StatusCode.value__
+            if ($ResponseCode -eq 401 -or $ResponseCode -eq 403) {
+                throw "Wrong credentials or insufficient permissions."
+            }
+            throw $_
+        }
+        
+        $Resources = $Response.$ResName
+        $TotalResources = [int]$Response."@total"
+        $ResourcesArray += $Resources
+        
+        while ($ResourcesArray.Count -lt $TotalResources) {
+            $PageNumber++
+            $Url = $UnityHost + $Endpoint + "?rowsPerPage=1&pageNumber=" + $PageNumber
+            $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Cred
+            $Resources = $Response.$ResName
+            $ResourcesArray += $Resources
+        }
+        
+        return $ResourcesArray
+    }
+    
+    $Job = Start-Job -ScriptBlock $ScriptBlock -ArgumentList $UnityHost, $Endpoint, $Credential, $ResourceName
+    
+    return @{
+        Job            = $Job
+        Endpoint       = $Endpoint
+        OutputFileName = $OutputFileName
+    }
+}
+
 function Invoke-GetOnUnityWithLimit {
     param(
         [array]$AsyncJobs
