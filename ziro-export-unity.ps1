@@ -10,53 +10,118 @@ function Invoke-GetOnUnity {
         [string]$Endpoint,
         [PSCredential]$Credential,
         [string]$OutputFileName,
-        [string]$ResourceName
+        [string]$ResourceName,
+        [bool]$Asynchronous = $false
     )
 
-    $PageNumber = 1
-
-    $Url = $UnityHost + $Endpoint + "?rowsPerPage=2000&pageNumber=" + $PageNumber
-
-    $Headers = @{
-        "Accept" = "application/json"
+    $ScriptBlock = {
+        param(
+            [string]$UnityHost,
+            [string]$Endpoint,
+            [PSCredential]$Cred,
+            [string]$ResName
+        )
+        
+        $PageNumber = 1
+        $Url = $UnityHost + $Endpoint + "?rowsPerPage=2000&pageNumber=" + $PageNumber
+        $Headers = @{ "Accept" = "application/json" }
+        
+        $ResourcesArray = @()
+        try {
+            $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Cred
+        }
+        catch {
+            $ResponseCode = $_.Exception.Response.StatusCode.value__
+            if ($ResponseCode -eq 401 -or $ResponseCode -eq 403) {
+                throw "Wrong credentials or insufficient permissions."
+            }
+            throw $_
+        }
+        
+        $Resources = $Response.$ResName
+        $TotalResources = [int]$Response."@total"
+        $ResourcesArray += $Resources
+        
+        while ($ResourcesArray.Count -lt $TotalResources) {
+            $PageNumber++
+            $Url = $Host + $Endpoint + "?rowsPerPage=1&pageNumber=" + $PageNumber
+            $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Cred
+            $Resources = $Response.$ResName
+            $ResourcesArray += $Resources
+        }
+        
+        return $ResourcesArray
     }
-
-    $ResourcesArray = @()
-    $Response = $null
-    try {
-        $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential
-    }
-    catch {
-        $ResponseCode = $_.Exception.Response.StatusCode.value__
-        if ($ResponseCode -eq 401 -or $ResponseCode -eq 403) {
-            Write-Host "Wrong credentials or insufficient permissions." -ForegroundColor Red
-            Remove-Item -Path output-unity -Recurse 
-            exit 1
+    
+    if ($Asynchronous) {
+        $Job = $Runspace.CreatePowerShell()
+        $Job.AddScript($ScriptBlock).AddArgument($UnityHost).AddArgument($Endpoint).AddArgument($Credential).AddArgument($ResourceName) | Out-Null
+        $AsyncResult = $Job.BeginInvoke()
+        
+        return @{
+            Job            = $Job
+            AsyncResult    = $AsyncResult
+            Endpoint       = $Endpoint
+            OutputFileName = $OutputFileName
+            IsAsync        = $true
         }
     }
+    else {
+        try {
+            $ResourcesArray = & $ScriptBlock -Host $UnityHost -Endpoint $Endpoint -Cred $Credential -ResName $ResourceName
+        }
+        catch {
+            if ($_ -match "Wrong credentials") {
+                Write-Host "Wrong credentials or insufficient permissions." -ForegroundColor Red
+                Remove-Item -Path output-unity -Recurse
+                exit 1
+            }
+            throw $_
+        }
+        
+        $JsonOutput = ConvertTo-Json $ResourcesArray
+        
+        if ($OutputFileName) {
+            $OutputFilePath = "output-unity/" + $OutputFileName
+            $JsonOutput | Out-File -FilePath $OutputFilePath
+        }
+        
+        return $JsonOutput | ConvertFrom-Json
+    }
+}
 
-    $Resources = $Response.$ResourceName
-    $TotalResources = [int]$Response."@total"
-    $ResourcesArray += $Resources
+function Wait-AsyncGetOnUnity {
+    param(
+        [array]$AsyncJobs
+    )
     
-    while ($ResourcesArray.Count -lt $TotalResources) {
-        $PageNumber++
-        $Url = $UnityHost + $Endpoint + "?rowsPerPage=1&pageNumber=" + $PageNumber
-        $Response = Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential
-        $Resources = $Response.$ResourceName
-        $ResourcesArray += $Resources
+    $Results = @{}
+    
+    foreach ($JobWrapper in $AsyncJobs) {
+        try {
+            $ResourcesArray = $JobWrapper.Job.EndInvoke($JobWrapper.AsyncResult)
+            $JsonOutput = ConvertTo-Json $ResourcesArray
+            
+            if ($JobWrapper.OutputFileName) {
+                $OutputFilePath = "output-unity/" + $JobWrapper.OutputFileName
+                $JsonOutput | Out-File -FilePath $OutputFilePath
+            }
+            
+            $Results[$JobWrapper.Endpoint] = $JsonOutput | ConvertFrom-Json
+        }
+        catch {
+            Write-Error "Error fetching endpoint $($JobWrapper.Endpoint): $_"
+            if ($_ -match "Wrong credentials") {
+                Remove-Item -Path output-unity -Recurse
+                exit 1
+            }
+        }
+        finally {
+            $JobWrapper.Job.Dispose()
+        }
     }
     
-    $JsonOutput = ConvertTo-Json $ResourcesArray
-
-    if ($OutputFileName) {
-        $OutputFilePath = "output-unity/" + $OutputFileName
-        $JsonOutput | Out-File -FilePath $OutputFilePath
-    }
-    
-    return $JsonOutput | ConvertFrom-Json
-
-
+    return $Results
 }
 
 function Export-Greetings {
@@ -111,11 +176,28 @@ New-Item -Name "output-unity/partitions" -ItemType Directory -Force | Out-Null
 New-Item -Name "output-unity/schedules" -ItemType Directory -Force | Out-Null
 New-Item -Name "output-unity/schedulesets" -ItemType Directory -Force | Out-Null
 
-Invoke-GetOnUnity $UnityHost '/vmrest/users/' $Credential 'users/list.json' 'User' | Out-Null
-Write-Output "Finished getting users"
+$InitialJobs = @()
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/users/' $Credential 'users/list.json' 'User' -Asynchronous $true
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler' -Asynchronous $true
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler' -Asynchronous $true
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler' -Asynchronous $true
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList' -Asynchronous $true
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule' -Asynchronous $true
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/partitions' $Credential 'partitions/list.json' 'Partition' -Asynchronous $true
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedules' $Credential 'schedules/list.json' 'Schedule' -Asynchronous $true
+$InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet' -Asynchronous $true
 
-$CallHandlers = Invoke-GetOnUnity $UnityHost '/vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler'
-Write-Output "Finished getting call handlers"
+Write-Output "Fetching 9 resource collections in parallel..."
+$InitialResults = Wait-AsyncGetOnUnity $InitialJobs
+
+$CallHandlers = $InitialResults['/vmrest/handlers/callhandlers']
+$InterviewHandlers = $InitialResults['/vmrest/handlers/interviewhandlers']
+$DistributionLists = $InitialResults['/vmrest/distributionlists']
+$RoutingRules = $InitialResults['/vmrest/routingrules']
+$Schedules = $InitialResults['/vmrest/schedules']
+$ScheduleSets = $InitialResults['/vmrest/schedulesets']
+
+Write-Output "Finished getting all primary resources"
 
 foreach ($CallHandler in $CallHandlers) {
     $FolderName = "callhandlers/" + $CallHandler.ObjectId
@@ -139,9 +221,6 @@ foreach ($CallHandler in $CallHandlers) {
 }
 $ProgressCount = 0
 
-$DistributionLists = Invoke-GetOnUnity $UnityHost '/vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList' 
-Write-Output "Finished getting distribution lists"
-
 foreach ($DistributionList in $DistributionLists) {
     $FolderName = "distributionlists/" + $DistributionList.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
@@ -150,12 +229,6 @@ foreach ($DistributionList in $DistributionLists) {
     Write-Progress -activity "Getting distribution lists information..." -status "Fetched: $ProgressCount of $($DistributionLists.Count)" -percentComplete (($ProgressCount / $DistributionLists.Count) * 100)
 }
 $ProgressCount = 0
-
-Invoke-GetOnUnity $UnityHost '/vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler' | Out-Null
-Write-Output "Finished getting directory handlers"
-
-$InterviewHandlers = Invoke-GetOnUnity $UnityHost '/vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler' 
-Write-Output "Finished getting interview handlers"
 
 foreach ($InterviewHandler in $InterviewHandlers) {
     $FolderName = "interviewhandlers/" + $InterviewHandler.ObjectId
@@ -166,9 +239,6 @@ foreach ($InterviewHandler in $InterviewHandlers) {
 }
 $ProgressCount = 0
 
-$RoutingRules = Invoke-GetOnUnity $UnityHost '/vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule' 
-Write-Output "Finished getting routing rules"
-
 foreach ($RoutingRule in $RoutingRules) {
     $FolderName = "routingrules/" + $RoutingRule.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
@@ -178,12 +248,6 @@ foreach ($RoutingRule in $RoutingRules) {
 }
 $ProgressCount = 0
 
-Invoke-GetOnUnity $UnityHost '/vmrest/partitions' $Credential 'partitions/list.json' 'Partition' | Out-Null
-Write-Output "Finished getting partitions"
-
-$Schedules = Invoke-GetOnUnity $UnityHost '/vmrest/schedules' $Credential 'schedules/list.json' 'Schedule' 
-Write-Output "Finished getting schedules"
-
 foreach ($Schedule in $Schedules) {
     $FolderName = "schedules/" + $Schedule.ObjectId
     New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
@@ -192,9 +256,6 @@ foreach ($Schedule in $Schedules) {
     Write-Progress -activity "Getting schedules information..." -status "Fetched: $ProgressCount of $($Schedules.Count)" -percentComplete (($ProgressCount / $Schedules.Count) * 100)
 }
 $ProgressCount = 0
-
-$ScheduleSets = Invoke-GetOnUnity $UnityHost '/vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet' 
-Write-Output "Finished getting schedule sets"
 
 foreach ($ScheduleSet in $ScheduleSets) {
     $FolderName = "schedulesets/" + $ScheduleSet.ObjectId
