@@ -2,7 +2,10 @@
 
 $MaxConcurrentJobs = 10
 
-function Invoke-GetOnUnity {
+# Builds a job specification for deferred execution with pagination support
+# Returns a hashtable containing the ScriptBlock, arguments, endpoint, and output file path.
+# The actual job execution is deferred to the concurrency manager (Invoke-GetOnUnityWithLimit).
+function Build-GetOnUnityJob {
     param (
         [string]$UnityHost,
         [string]$Endpoint,
@@ -50,19 +53,18 @@ function Invoke-GetOnUnity {
         return $ResourcesArray
     }
     
-    $Job = Start-Job -ScriptBlock $ScriptBlock -ArgumentList $UnityHost, $Endpoint, $Credential, $ResourceName
-    
     return @{
-        Job            = $Job
+        ScriptBlock    = $ScriptBlock
+        Arguments      = @($UnityHost, $Endpoint, $Credential, $ResourceName)
         Endpoint       = $Endpoint
         OutputFileName = $OutputFileName
     }
 }
 
-# Manages concurrent execution of async jobs with a configurable limit
-# Starts jobs in batches up to $MaxConcurrentJobs, monitors their progress,
-# and starts new jobs as slots become available. Collects results and saves
-# JSON output to specified files.
+# Executes job specifications with concurrency limiting
+# Queues all job specs and starts them in batches up to $MaxConcurrentJobs.
+# Monitors their progress, starts new jobs as slots become available,
+# collects results when complete, and saves JSON output to specified files.
 function Invoke-GetOnUnityWithLimit {
     param([array]$AsyncJobs)
     
@@ -71,7 +73,13 @@ function Invoke-GetOnUnityWithLimit {
     
     # Start initial batch of jobs
     while ($JobIndex -lt $AsyncJobs.Count -and $ActiveJobs.Count -lt $MaxConcurrentJobs) {
-        $ActiveJobs += $AsyncJobs[$JobIndex++]
+        $JobSpec = $AsyncJobs[$JobIndex++]
+        $Job = Start-Job -ScriptBlock $JobSpec.ScriptBlock -ArgumentList $JobSpec.Arguments
+        $ActiveJobs += @{
+            Job            = $Job
+            Endpoint       = $JobSpec.Endpoint
+            OutputFileName = $JobSpec.OutputFileName
+        }
     }
     
     $CompletedJobs = @()
@@ -92,7 +100,13 @@ function Invoke-GetOnUnityWithLimit {
         
         # Start new jobs if slots are available
         while ($JobIndex -lt $AsyncJobs.Count -and $ActiveJobs.Count -lt $MaxConcurrentJobs) {
-            $ActiveJobs += $AsyncJobs[$JobIndex++]
+            $JobSpec = $AsyncJobs[$JobIndex++]
+            $Job = Start-Job -ScriptBlock $JobSpec.ScriptBlock -ArgumentList $JobSpec.Arguments
+            $ActiveJobs += @{
+                Job            = $Job
+                Endpoint       = $JobSpec.Endpoint
+                OutputFileName = $JobSpec.OutputFileName
+            }
         }
         
         Start-Sleep -Milliseconds 100
@@ -144,7 +158,7 @@ function Export-Greetings {
         $Enabled = [System.Convert]::ToBoolean($Greeting.Enabled)
 
         if ($PlayWhat -eq 1 -and $Enabled -eq $true) {
-            $GreetingStreamFiles = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
+            $GreetingStreamFiles = Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
         
             foreach ($GreetingStreamFile in $GreetingStreamFiles) {
                 $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
@@ -172,14 +186,14 @@ function Export-CallHandlers {
     foreach ($CallHandler in $CallHandlers) {
         $FolderName = "callhandlers/" + $CallHandler.ObjectId
         New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        $PendingJobs += Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
+        $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
         
         $IsPrimary = [System.Convert]::ToBoolean($CallHandler.IsPrimary)
 
         if ($IsPrimary -eq $false) {
-            $PendingJobs += Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption'
-            $PendingJobs += Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry'
-            $PendingJobs += Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/callhandlerowners") $Credential ($FolderName + '/callhandlerowners.json') 'CallHandlerOwner'
+            $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption'
+            $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry'
+            $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/callhandlerowners") $Credential ($FolderName + '/callhandlerowners.json') 'CallHandlerOwner'
         }
         else {
             Write-Output "Primary call handler [$($CallHandler.ObjectId)] - skipping greetings, transfer options, menu entries, and owners"
@@ -204,7 +218,7 @@ function Export-DistributionLists {
     foreach ($DistributionList in $DistributionLists) {
         $FolderName = "distributionlists/" + $DistributionList.ObjectId
         New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        $PendingJobs += Invoke-GetOnUnity $UnityHost ('/vmrest/distributionlists/' + $DistributionList.ObjectId + "/distributionlistmembers") $Credential ($FolderName + '/distributionlistmembers.json') 'DistributionListMember'
+        $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/distributionlists/' + $DistributionList.ObjectId + "/distributionlistmembers") $Credential ($FolderName + '/distributionlistmembers.json') 'DistributionListMember'
         $ProgressCount++
         Write-Progress -activity "Queuing distribution lists information..." -status "Queued: $ProgressCount of $($DistributionLists.Count)" -percentComplete (($ProgressCount / $DistributionLists.Count) * 100)
     }
@@ -224,7 +238,7 @@ function Export-InterviewHandlers {
     foreach ($InterviewHandler in $InterviewHandlers) {
         $FolderName = "interviewhandlers/" + $InterviewHandler.ObjectId
         New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        $PendingJobs += Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/interviewhandlers/' + $InterviewHandler.ObjectId + "/interviewquestions") $Credential ($FolderName + '/interviewquestions.json') 'InterviewQuestion'
+        $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/interviewhandlers/' + $InterviewHandler.ObjectId + "/interviewquestions") $Credential ($FolderName + '/interviewquestions.json') 'InterviewQuestion'
         $ProgressCount++
         Write-Progress -activity "Queuing interview handlers information..." -status "Queued: $ProgressCount of $($InterviewHandlers.Count)" -percentComplete (($ProgressCount / $InterviewHandlers.Count) * 100)
     }
@@ -244,7 +258,7 @@ function Export-RoutingRules {
     foreach ($RoutingRule in $RoutingRules) {
         $FolderName = "routingrules/" + $RoutingRule.ObjectId
         New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        $PendingJobs += Invoke-GetOnUnity $UnityHost ('/vmrest/routingrules/' + $RoutingRule.ObjectId + "/routingruleconditions") $Credential ($FolderName + '/routingruleconditions.json') 'RoutingruleCondition'
+        $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/routingrules/' + $RoutingRule.ObjectId + "/routingruleconditions") $Credential ($FolderName + '/routingruleconditions.json') 'RoutingruleCondition'
         $ProgressCount++
         Write-Progress -activity "Queuing routing rules information..." -status "Queued: $ProgressCount of $($RoutingRules.Count)" -percentComplete (($ProgressCount / $RoutingRules.Count) * 100)
     }
@@ -264,7 +278,7 @@ function Export-Schedules {
     foreach ($Schedule in $Schedules) {
         $FolderName = "schedules/" + $Schedule.ObjectId
         New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        $PendingJobs += Invoke-GetOnUnity $UnityHost ('/vmrest/schedules/' + $Schedule.ObjectId + "/scheduledetails") $Credential ($FolderName + '/scheduledetails.json') 'ScheduleDetail'
+        $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/schedules/' + $Schedule.ObjectId + "/scheduledetails") $Credential ($FolderName + '/scheduledetails.json') 'ScheduleDetail'
         $ProgressCount++
         Write-Progress -activity "Queuing schedules information..." -status "Queued: $ProgressCount of $($Schedules.Count)" -percentComplete (($ProgressCount / $Schedules.Count) * 100)
     }
@@ -284,7 +298,7 @@ function Export-ScheduleSets {
     foreach ($ScheduleSet in $ScheduleSets) {
         $FolderName = "schedulesets/" + $ScheduleSet.ObjectId
         New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        $PendingJobs += Invoke-GetOnUnity $UnityHost ('/vmrest/schedulesets/' + $ScheduleSet.ObjectId + "/schedulesetmembers") $Credential ($FolderName + '/schedulesetmembers.json') 'SchedulesetMember'
+        $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/schedulesets/' + $ScheduleSet.ObjectId + "/schedulesetmembers") $Credential ($FolderName + '/schedulesetmembers.json') 'SchedulesetMember'
         $ProgressCount++
         Write-Progress -activity "Queuing schedule sets information..." -status "Queued: $ProgressCount of $($ScheduleSets.Count)" -percentComplete (($ProgressCount / $ScheduleSets.Count) * 100)
     }
@@ -312,15 +326,15 @@ New-Item -Name "output-unity/schedulesets" -ItemType Directory -Force | Out-Null
 
 try {
     $InitialJobs = @()
-    $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/users/' $Credential 'users/list.json' 'User'
-    $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler'
-    $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler'
-    $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler'
-    $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList'
-    $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule'
-    $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/partitions' $Credential 'partitions/list.json' 'Partition'
-    $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedules' $Credential 'schedules/list.json' 'Schedule'
-    $InitialJobs += Invoke-GetOnUnity $UnityHost '/vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet'
+    $InitialJobs += Build-GetOnUnityJob $UnityHost '/vmrest/users/' $Credential 'users/list.json' 'User'
+    $InitialJobs += Build-GetOnUnityJob $UnityHost '/vmrest/handlers/callhandlers' $Credential 'callhandlers/list.json' 'CallHandler'
+    $InitialJobs += Build-GetOnUnityJob $UnityHost '/vmrest/handlers/directoryhandlers' $Credential 'directoryhandlers/list.json' 'DirectoryHandler'
+    $InitialJobs += Build-GetOnUnityJob $UnityHost '/vmrest/handlers/interviewhandlers' $Credential 'interviewhandlers/list.json' 'InterviewHandler'
+    $InitialJobs += Build-GetOnUnityJob $UnityHost '/vmrest/distributionlists' $Credential 'distributionlists/list.json' 'DistributionList'
+    $InitialJobs += Build-GetOnUnityJob $UnityHost '/vmrest/routingrules' $Credential 'routingrules/list.json' 'RoutingRule'
+    $InitialJobs += Build-GetOnUnityJob $UnityHost '/vmrest/partitions' $Credential 'partitions/list.json' 'Partition'
+    $InitialJobs += Build-GetOnUnityJob $UnityHost '/vmrest/schedules' $Credential 'schedules/list.json' 'Schedule'
+    $InitialJobs += Build-GetOnUnityJob $UnityHost '/vmrest/schedulesets' $Credential 'schedulesets/list.json' 'ScheduleSet'
 
     Write-Output "Fetching 9 resource collections in parallel..."
     $InitialResults = Invoke-GetOnUnityWithLimit $InitialJobs
