@@ -118,6 +118,109 @@ function Export-Greetings {
     
 }
 
+function Export-CallHandlers {
+    param (
+        $CallHandlers
+    )
+    $ProgressCount = 0
+    foreach ($CallHandler in $CallHandlers) {
+        $FolderName = "callhandlers/" + $CallHandler.ObjectId
+        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
+        $Greetings = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
+        
+        $IsPrimary = [System.Convert]::ToBoolean($CallHandler.IsPrimary)
+
+        if ($IsPrimary -eq $false) {
+            Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
+            Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption'
+            Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry'
+            Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/callhandlerowners") $Credential ($FolderName + '/callhandlerowners.json') 'CallHandlerOwner'
+        }
+        else {
+            Write-Output "Primary call handler [$($CallHandler.ObjectId)] - skipping greetings, transfer options, menu entries, and owners"
+        }
+        
+        $ProgressCount++
+        Write-Progress -activity "Getting call handlers information..." -status "Fetched: $ProgressCount of $($CallHandlers.Count)" -percentComplete (($ProgressCount / $CallHandlers.Count) * 100)
+    }
+    Write-Output "Finished getting call handlers"
+}
+
+function Export-DistributionLists {
+    param (
+        $DistributionLists
+    )
+    $ProgressCount = 0
+    foreach ($DistributionList in $DistributionLists) {
+        $FolderName = "distributionlists/" + $DistributionList.ObjectId
+        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
+        Invoke-GetOnUnity $UnityHost ('/vmrest/distributionlists/' + $DistributionList.ObjectId + "/distributionlistmembers") $Credential ($FolderName + '/distributionlistmembers.json') 'DistributionListMember'
+        $ProgressCount++
+        Write-Progress -activity "Getting distribution lists information..." -status "Fetched: $ProgressCount of $($DistributionLists.Count)" -percentComplete (($ProgressCount / $DistributionLists.Count) * 100)
+    }
+    Write-Output "Finished getting distribution lists"
+}
+
+function Export-InterviewHandlers {
+    param (
+        $InterviewHandlers
+    )
+    $ProgressCount = 0
+    foreach ($InterviewHandler in $InterviewHandlers) {
+        $FolderName = "interviewhandlers/" + $InterviewHandler.ObjectId
+        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
+        Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/interviewhandlers/' + $InterviewHandler.ObjectId + "/interviewquestions") $Credential ($FolderName + '/interviewquestions.json') 'InterviewQuestion'
+        $ProgressCount++
+        Write-Progress -activity "Getting interview handlers information..." -status "Fetched: $ProgressCount of $($InterviewHandlers.Count)" -percentComplete (($ProgressCount / $InterviewHandlers.Count) * 100)
+    }
+    Write-Output "Finished getting interview handlers"
+}
+
+function Export-RoutingRules {
+    param (
+        $RoutingRules
+    )
+    $ProgressCount = 0
+    foreach ($RoutingRule in $RoutingRules) {
+        $FolderName = "routingrules/" + $RoutingRule.ObjectId
+        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
+        Invoke-GetOnUnity $UnityHost ('/vmrest/routingrules/' + $RoutingRule.ObjectId + "/routingruleconditions") $Credential ($FolderName + '/routingruleconditions.json') 'RoutingruleCondition'
+        $ProgressCount++
+        Write-Progress -activity "Getting routing rules information..." -status "Fetched: $ProgressCount of $($RoutingRules.Count)" -percentComplete (($ProgressCount / $RoutingRules.Count) * 100)
+    }
+    Write-Output "Finished getting routing rules"
+}
+
+function Export-Schedules {
+    param (
+        $Schedules
+    )
+    $ProgressCount = 0
+    foreach ($Schedule in $Schedules) {
+        $FolderName = "schedules/" + $Schedule.ObjectId
+        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
+        Invoke-GetOnUnity $UnityHost ('/vmrest/schedules/' + $Schedule.ObjectId + "/scheduledetails") $Credential ($FolderName + '/scheduledetails.json') 'ScheduleDetail'
+        $ProgressCount++
+        Write-Progress -activity "Getting schedules information..." -status "Fetched: $ProgressCount of $($Schedules.Count)" -percentComplete (($ProgressCount / $Schedules.Count) * 100)
+    }
+    Write-Output "Finished getting schedules"
+}
+
+function Export-ScheduleSets {
+    param (
+        $ScheduleSets
+    )
+    $ProgressCount = 0
+    foreach ($ScheduleSet in $ScheduleSets) {
+        $FolderName = "schedulesets/" + $ScheduleSet.ObjectId
+        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
+        Invoke-GetOnUnity $UnityHost ('/vmrest/schedulesets/' + $ScheduleSet.ObjectId + "/schedulesetmembers") $Credential ($FolderName + '/schedulesetmembers.json') 'SchedulesetMember'
+        $ProgressCount++
+        Write-Progress -activity "Getting schedule sets information..." -status "Fetched: $ProgressCount of $($ScheduleSets.Count)" -percentComplete (($ProgressCount / $ScheduleSets.Count) * 100)
+    }
+    Write-Output "Finished getting schedule sets"
+}
+
 $Error.Clear()
 
 $UnityHost = Read-Host "Please enter the Unity server URL (ex: https://myunity.com)"
@@ -160,76 +263,12 @@ try {
 
     Write-Output "Finished getting all primary resources"
 
-    foreach ($CallHandler in $CallHandlers) {
-        $FolderName = "callhandlers/" + $CallHandler.ObjectId
-        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        $Greetings = Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
-        
-        $IsPrimary = [System.Convert]::ToBoolean($CallHandler.IsPrimary)
-
-        if ($IsPrimary -eq $false) {
-            Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
-            Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption'
-            Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry'
-            Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/callhandlerowners") $Credential ($FolderName + '/callhandlerowners.json') 'CallHandlerOwner'
-        }
-        else {
-            Write-Output "Primary call handler [$($CallHandler.ObjectId)] - skipping greetings, transfer options, menu entries, and owners"
-        }
-        
-        $ProgressCount++
-        Write-Progress -activity "Getting call handlers information..." -status "Fetched: $ProgressCount of $($CallHandlers.Count)" -percentComplete (($ProgressCount / $CallHandlers.Count) * 100)
-    }
-    $ProgressCount = 0
-
-    foreach ($DistributionList in $DistributionLists) {
-        $FolderName = "distributionlists/" + $DistributionList.ObjectId
-        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        Invoke-GetOnUnity $UnityHost ('/vmrest/distributionlists/' + $DistributionList.ObjectId + "/distributionlistmembers") $Credential ($FolderName + '/distributionlistmembers.json') 'DistributionListMember'
-        $ProgressCount++
-        Write-Progress -activity "Getting distribution lists information..." -status "Fetched: $ProgressCount of $($DistributionLists.Count)" -percentComplete (($ProgressCount / $DistributionLists.Count) * 100)
-    }
-    $ProgressCount = 0
-    Write-Output "Finished getting distribution lists"
-
-    foreach ($InterviewHandler in $InterviewHandlers) {
-        $FolderName = "interviewhandlers/" + $InterviewHandler.ObjectId
-        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        Invoke-GetOnUnity $UnityHost ('/vmrest/handlers/interviewhandlers/' + $InterviewHandler.ObjectId + "/interviewquestions") $Credential ($FolderName + '/interviewquestions.json') 'InterviewQuestion'
-        $ProgressCount++
-        Write-Progress -activity "Getting interview handlers information..." -status "Fetched: $ProgressCount of $($InterviewHandlers.Count)" -percentComplete (($ProgressCount / $InterviewHandlers.Count) * 100)
-    }
-    $ProgressCount = 0
-    Write-Output "Finished getting interview handlers"
-
-    foreach ($RoutingRule in $RoutingRules) {
-        $FolderName = "routingrules/" + $RoutingRule.ObjectId
-        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        Invoke-GetOnUnity $UnityHost ('/vmrest/routingrules/' + $RoutingRule.ObjectId + "/routingruleconditions") $Credential ($FolderName + '/routingruleconditions.json') 'RoutingruleCondition'
-        $ProgressCount++
-        Write-Progress -activity "Getting routing rules information..." -status "Fetched: $ProgressCount of $($RoutingRules.Count)" -percentComplete (($ProgressCount / $RoutingRules.Count) * 100)
-    }
-    $ProgressCount = 0
-    Write-Output "Finished getting routing rules"
-
-    foreach ($Schedule in $Schedules) {
-        $FolderName = "schedules/" + $Schedule.ObjectId
-        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        Invoke-GetOnUnity $UnityHost ('/vmrest/schedules/' + $Schedule.ObjectId + "/scheduledetails") $Credential ($FolderName + '/scheduledetails.json') 'ScheduleDetail'
-        $ProgressCount++
-        Write-Progress -activity "Getting schedules information..." -status "Fetched: $ProgressCount of $($Schedules.Count)" -percentComplete (($ProgressCount / $Schedules.Count) * 100)
-    }
-    $ProgressCount = 0
-    Write-Output "Finished getting schedules"
-
-    foreach ($ScheduleSet in $ScheduleSets) {
-        $FolderName = "schedulesets/" + $ScheduleSet.ObjectId
-        New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        Invoke-GetOnUnity $UnityHost ('/vmrest/schedulesets/' + $ScheduleSet.ObjectId + "/schedulesetmembers") $Credential ($FolderName + '/schedulesetmembers.json') 'SchedulesetMember'
-        $ProgressCount++
-        Write-Progress -activity "Getting schedule sets information..." -status "Fetched: $ProgressCount of $($ScheduleSets.Count)" -percentComplete (($ProgressCount / $ScheduleSets.Count) * 100)
-    }
-    Write-Output "Finished getting schedule sets"
+    Export-CallHandlers $CallHandlers
+    Export-DistributionLists $DistributionLists
+    Export-InterviewHandlers $InterviewHandlers
+    Export-RoutingRules $RoutingRules
+    Export-Schedules $Schedules
+    Export-ScheduleSets $ScheduleSets
 
     $ZipFileName = (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + "_" + ([System.Uri]$UnityHost).Host + ".zip"
 
