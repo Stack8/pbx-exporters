@@ -151,7 +151,25 @@ function Invoke-GetOnUnityWithLimit {
     
     return $Results
 }
-
+# Exports greetings audio for all call handlers after jobs are complete
+function Export-CallHandlerGreetings {
+    param (
+        $CallHandlers
+    )
+    foreach ($CallHandler in $CallHandlers) {
+        $IsPrimary = [System.Convert]::ToBoolean($CallHandler.IsPrimary)
+        if ($IsPrimary -eq $false) {
+            $FolderName = "callhandlers/" + $CallHandler.ObjectId
+            $GreetingsPath = "output-unity/" + $FolderName + "/greetings.json"
+            if (Test-Path $GreetingsPath) {
+                $Greetings = Get-Content $GreetingsPath | ConvertFrom-Json
+                Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
+            } else {
+                Write-Warning "Greetings file not found for call handler $($CallHandler.ObjectId) at $GreetingsPath"
+            }
+        }
+    }
+}
 
 function Export-Greetings {
     param (
@@ -166,7 +184,7 @@ function Export-Greetings {
 
         if ($PlayWhat -eq 1 -and $Enabled -eq $true) {
             $JobSpec = Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
-            $GreetingStreamFiles = $JobSpec.ScriptBlock.Invoke($JobSpec.Arguments)
+            $GreetingStreamFiles = $JobSpec.ScriptBlock.Invoke($JobSpec.Arguments) | Where-Object { $_ }
 
             foreach ($GreetingStreamFile in $GreetingStreamFiles) {
                 $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
@@ -175,6 +193,7 @@ function Export-Greetings {
                     "Accept" = "application/json"
                 }
 
+                Write-Host ("[DEBUG] Downloading greeting audio from URL: $Url") -ForegroundColor Yellow
                 Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential -OutFile ("output-unity/" + $FolderName + '/gr_' + $Greeting.GreetingType + "_" + $GreetingStreamFile.LanguageCode + ".wav")
             }
         }
@@ -206,6 +225,8 @@ function Export-CallHandlers {
     Write-Output "Processing $($PendingJobs.Count) call handler jobs with max $MaxConcurrentJobs concurrent..."
     Invoke-GetOnUnityWithLimit $PendingJobs | Out-Null
 
+    # After all jobs are done, load greetings and export audio
+    Export-CallHandlerGreetings $CallHandlers
     Write-Output "Finished getting call handlers"
 }
 
@@ -360,6 +381,6 @@ catch {
     Remove-Item -Path output-unity -Recurse -ErrorAction SilentlyContinue
     $ScriptEndTime = Get-Date
     $Elapsed = $ScriptEndTime - $ScriptStartTime
-    Write-Host ("Script failed after {0:hh\:mm\:ss} (hh:mm:ss)" -f $Elapsed) -ForegroundColor Yellow
+    Write-Host ("Script failed after {0:hh\:mm\:ss} (hh:mm:ss)" -f $Elapsed) -ForegroundColor Red
     exit 1
 }
