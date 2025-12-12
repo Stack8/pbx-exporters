@@ -85,9 +85,10 @@ function Invoke-GetOnUnityWithLimit {
     $CompletedJobs = @()
     
     # Monitor and manage job concurrency
+    $TotalJobs = $AsyncJobs.Count
     while ($ActiveJobs.Count -gt 0) {
         $StillRunning = @()
-        
+
         foreach ($JobWrapper in $ActiveJobs) {
             if ($JobWrapper.Job.State -in @('Completed', 'Failed')) {
                 $CompletedJobs += $JobWrapper
@@ -96,9 +97,14 @@ function Invoke-GetOnUnityWithLimit {
                 $StillRunning += $JobWrapper
             }
         }
-        
+
         $ActiveJobs = $StillRunning
-        
+
+        # Show progress bar
+        $CompletedCount = $CompletedJobs.Count
+        $PercentComplete = if ($TotalJobs -eq 0) { 100 } else { [math]::Round(($CompletedCount / $TotalJobs) * 100) }
+        Write-Progress -Activity "Running jobs..." -Status "Completed: $CompletedCount of $TotalJobs" -PercentComplete $PercentComplete
+
         # Start new jobs if slots are available
         while ($JobIndex -lt $AsyncJobs.Count -and $ActiveJobs.Count -lt $MaxConcurrentJobs) {
             $JobSpec = $AsyncJobs[$JobIndex++]
@@ -109,9 +115,11 @@ function Invoke-GetOnUnityWithLimit {
                 OutputFileName = $JobSpec.OutputFileName
             }
         }
-        
+
         Start-Sleep -Milliseconds 100
     }
+    # Clear progress bar at the end
+    Write-Progress -Activity "Running jobs..." -Completed
     
     # Process completed jobs and save results
     $Results = @{}
