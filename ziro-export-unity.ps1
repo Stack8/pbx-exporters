@@ -207,21 +207,6 @@ function Export-CallHandlers {
     Write-Output "Processing $($PendingJobs.Count) call handler jobs with max $MaxConcurrentJobs concurrent..."
     Invoke-GetOnUnityWithLimit $PendingJobs | Out-Null
 
-    # After all jobs are done, load greetings and export audio
-    foreach ($CallHandler in $CallHandlers) {
-        $IsPrimary = [System.Convert]::ToBoolean($CallHandler.IsPrimary)
-        if ($IsPrimary -eq $false) {
-            $FolderName = "callhandlers/" + $CallHandler.ObjectId
-            $GreetingsPath = "output-unity/" + $FolderName + "/greetings.json"
-            if (Test-Path $GreetingsPath) {
-                $Greetings = Get-Content $GreetingsPath | ConvertFrom-Json
-                Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
-            }
-            else {
-                Write-Warning "Greetings file not found for call handler $($CallHandler.ObjectId) at $GreetingsPath"
-            }
-        }
-    }
     Write-Output "Finished getting call handlers"
 }
 
@@ -327,11 +312,11 @@ function Export-ScheduleSets {
 
 
 $Error.Clear()
-$ScriptStartTime = Get-Date
 
 $UnityHost = Read-Host "Please enter the Unity server URL (ex: https://myunity.com)"
 $Credential = Get-Credential -Message "Insert Unity Username and Password"
 
+$ScriptStartTime = Get-Date
 New-Item -Name "output-unity" -ItemType Directory -Force | Out-Null
 New-Item -Name "output-unity/users" -ItemType Directory -Force | Out-Null
 New-Item -Name "output-unity/callhandlers" -ItemType Directory -Force | Out-Null
