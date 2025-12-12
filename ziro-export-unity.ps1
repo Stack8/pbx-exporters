@@ -156,19 +156,23 @@ function Export-CallHandlerGreetings {
     param (
         $CallHandlers
     )
+
     foreach ($CallHandler in $CallHandlers) {
         $IsPrimary = [System.Convert]::ToBoolean($CallHandler.IsPrimary)
         if ($IsPrimary -eq $false) {
             $FolderName = "callhandlers/" + $CallHandler.ObjectId
             $GreetingsPath = "output-unity/" + $FolderName + "/greetings.json"
             if (Test-Path $GreetingsPath) {
+                Write-Host ("Exporting greetings for CallHandler $($CallHandler.ObjectId) ...")
                 $Greetings = Get-Content $GreetingsPath | ConvertFrom-Json
                 Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
+                Write-Host ("Finished greetings export for CallHandler $($CallHandler.ObjectId)")
             } else {
                 Write-Warning "Greetings file not found for call handler $($CallHandler.ObjectId) at $GreetingsPath"
             }
         }
     }
+    Write-Host ("Exported greetings for call handlers.") -ForegroundColor
 }
 
 function Export-Greetings {
@@ -223,9 +227,6 @@ function Export-CallHandlers {
 
     Write-Output "Processing $($PendingJobs.Count) call handler jobs with max $MaxConcurrentJobs concurrent..."
     Invoke-GetOnUnityWithLimit $PendingJobs | Out-Null
-
-    # After all jobs are done, load greetings and export audio
-    Export-CallHandlerGreetings $CallHandlers
     Write-Output "Finished getting call handlers"
 }
 
@@ -357,12 +358,27 @@ try {
 
     Write-Output "Finished getting all primary resources"
 
-    Export-CallHandlers $CallHandlers
-    Export-DistributionLists $DistributionLists
-    Export-InterviewHandlers $InterviewHandlers
-    Export-RoutingRules $RoutingRules
-    Export-Schedules $Schedules
-    Export-ScheduleSets $ScheduleSets
+
+    $ExportJobs = @()
+    $ExportJobs += Start-Job -ScriptBlock { param($ch) Export-CallHandlers $ch } -ArgumentList $CallHandlers
+    $ExportJobs += Start-Job -ScriptBlock { param($dl) Export-DistributionLists $dl } -ArgumentList $DistributionLists
+    $ExportJobs += Start-Job -ScriptBlock { param($ih) Export-InterviewHandlers $ih } -ArgumentList $InterviewHandlers
+    $ExportJobs += Start-Job -ScriptBlock { param($rr) Export-RoutingRules $rr } -ArgumentList $RoutingRules
+    $ExportJobs += Start-Job -ScriptBlock { param($sc) Export-Schedules $sc } -ArgumentList $Schedules
+    $ExportJobs += Start-Job -ScriptBlock { param($ss) Export-ScheduleSets $ss } -ArgumentList $ScheduleSets
+    $ExportJobs += Start-Job -ScriptBlock { param($ch) Export-CallHandlerGreetings $ch } -ArgumentList $CallHandlers
+
+    Write-Host "[INFO] Waiting for all export jobs to complete..." -ForegroundColor Cyan
+    $ExportJobs | Wait-Job | Out-Null
+    foreach ($job in $ExportJobs) {
+        try {
+            $null = Receive-Job -Job $job -ErrorAction Stop
+            Write-Host ("[INFO] Export job $($job.Id) completed successfully.") -ForegroundColor Green
+        } catch {
+            Write-Warning "Export job $($job.Id) failed: $_"
+        }
+        Remove-Job -Job $job
+    }
 
     $ZipFileName = (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + "_" + ([System.Uri]$UnityHost).Host + ".zip"
 
