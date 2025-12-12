@@ -193,7 +193,6 @@ function Export-Greetings {
                     "Accept" = "application/json"
                 }
 
-                Write-Host ("[DEBUG] Downloading greeting audio from URL: $Url") -ForegroundColor Yellow
                 Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential -OutFile ("output-unity/" + $FolderName + '/gr_' + $Greeting.GreetingType + "_" + $GreetingStreamFile.LanguageCode + ".wav")
             }
         }
