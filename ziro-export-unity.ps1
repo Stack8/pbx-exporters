@@ -91,7 +91,8 @@ function Invoke-GetOnUnityWithLimit {
         foreach ($JobWrapper in $ActiveJobs) {
             if ($JobWrapper.Job.State -in @('Completed', 'Failed')) {
                 $CompletedJobs += $JobWrapper
-            } else {
+            }
+            else {
                 $StillRunning += $JobWrapper
             }
         }
@@ -215,7 +216,8 @@ function Export-CallHandlers {
             if (Test-Path $GreetingsPath) {
                 $Greetings = Get-Content $GreetingsPath | ConvertFrom-Json
                 Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
-            } else {
+            }
+            else {
                 Write-Warning "Greetings file not found for call handler $($CallHandler.ObjectId) at $GreetingsPath"
             }
         }
