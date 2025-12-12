@@ -323,7 +323,9 @@ function Export-ScheduleSets {
     Write-Output "Finished getting schedule sets"
 }
 
+
 $Error.Clear()
+$ScriptStartTime = Get-Date
 
 $UnityHost = Read-Host "Please enter the Unity server URL (ex: https://myunity.com)"
 $Credential = Get-Credential -Message "Insert Unity Username and Password"
@@ -377,10 +379,15 @@ try {
     Write-Output "Removing temporary output directory"
     Remove-Item -Path output-unity -Recurse 
 
-    Write-Host "The script ran successfully" -ForegroundColor Green
+    $ScriptEndTime = Get-Date
+    $Elapsed = $ScriptEndTime - $ScriptStartTime
+    Write-Host ("The script ran successfully in {0:hh\:mm\:ss} (hh:mm:ss)" -f $Elapsed) -ForegroundColor Green
 }
 catch {
     Write-Host "An error occurred: $_" -ForegroundColor Red
     Remove-Item -Path output-unity -Recurse -ErrorAction SilentlyContinue
+    $ScriptEndTime = Get-Date
+    $Elapsed = $ScriptEndTime - $ScriptStartTime
+    Write-Host ("Script failed after {0:hh\:mm\:ss} (hh:mm:ss)" -f $Elapsed) -ForegroundColor Yellow
     exit 1
 }
