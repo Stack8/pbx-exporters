@@ -358,27 +358,13 @@ try {
 
     Write-Output "Finished getting all primary resources"
 
-
-    $ExportJobs = @()
-    $ExportJobs += Start-Job -ScriptBlock { param($ch) Export-CallHandlers $ch } -ArgumentList $CallHandlers
-    $ExportJobs += Start-Job -ScriptBlock { param($dl) Export-DistributionLists $dl } -ArgumentList $DistributionLists
-    $ExportJobs += Start-Job -ScriptBlock { param($ih) Export-InterviewHandlers $ih } -ArgumentList $InterviewHandlers
-    $ExportJobs += Start-Job -ScriptBlock { param($rr) Export-RoutingRules $rr } -ArgumentList $RoutingRules
-    $ExportJobs += Start-Job -ScriptBlock { param($sc) Export-Schedules $sc } -ArgumentList $Schedules
-    $ExportJobs += Start-Job -ScriptBlock { param($ss) Export-ScheduleSets $ss } -ArgumentList $ScheduleSets
-    $ExportJobs += Start-Job -ScriptBlock { param($ch) Export-CallHandlerGreetings $ch } -ArgumentList $CallHandlers
-
-    Write-Host "[INFO] Waiting for all export jobs to complete..." -ForegroundColor Cyan
-    $ExportJobs | Wait-Job | Out-Null
-    foreach ($job in $ExportJobs) {
-        try {
-            $null = Receive-Job -Job $job -ErrorAction Stop
-            Write-Host ("[INFO] Export job $($job.Id) completed successfully.") -ForegroundColor Green
-        } catch {
-            Write-Warning "Export job $($job.Id) failed: $_"
-        }
-        Remove-Job -Job $job
-    }
+    Export-CallHandlers $CallHandlers
+    Export-DistributionLists $DistributionLists
+    Export-InterviewHandlers $InterviewHandlers
+    Export-RoutingRules $RoutingRules
+    Export-Schedules $Schedules
+    Export-ScheduleSets $ScheduleSets
+    Export-CallHandlerGreetings $CallHandlers
 
     $ZipFileName = (Get-Date -Format "dd-MM-yyyy_HH-mm-ss").ToString() + "_" + ([System.Uri]$UnityHost).Host + ".zip"
 
