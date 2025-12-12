@@ -172,7 +172,7 @@ function Export-CallHandlerGreetings {
             }
         }
     }
-    Write-Host ("Exported greetings for call handlers.") -ForegroundColor
+    Write-Host ("Exported greetings for call handlers.")
 }
 
 function Export-Greetings {
