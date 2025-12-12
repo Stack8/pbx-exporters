@@ -158,8 +158,9 @@ function Export-Greetings {
         $Enabled = [System.Convert]::ToBoolean($Greeting.Enabled)
 
         if ($PlayWhat -eq 1 -and $Enabled -eq $true) {
-            $GreetingStreamFiles = Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
-        
+            $JobSpec = Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
+            $GreetingStreamFiles = $JobSpec.ScriptBlock.Invoke($JobSpec.Arguments)
+
             foreach ($GreetingStreamFile in $GreetingStreamFiles) {
                 $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
 
@@ -186,11 +187,10 @@ function Export-CallHandlers {
     foreach ($CallHandler in $CallHandlers) {
         $FolderName = "callhandlers/" + $CallHandler.ObjectId
         New-Item -Name ("output-unity/" + $FolderName)  -ItemType Directory -Force | Out-Null
-        $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
-        
         $IsPrimary = [System.Convert]::ToBoolean($CallHandler.IsPrimary)
 
         if ($IsPrimary -eq $false) {
+            $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/greetings") $Credential ($FolderName + '/greetings.json') 'Greeting'
             $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/transferoptions") $Credential ($FolderName + '/transferoptions.json') 'TransferOption'
             $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/menuentries") $Credential ($FolderName + '/menuentries.json') 'Menuentry'
             $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandler.ObjectId + "/callhandlerowners") $Credential ($FolderName + '/callhandlerowners.json') 'CallHandlerOwner'
@@ -198,13 +198,28 @@ function Export-CallHandlers {
         else {
             Write-Output "Primary call handler [$($CallHandler.ObjectId)] - skipping greetings, transfer options, menu entries, and owners"
         }
-        
+
         $ProgressCount++
         Write-Progress -activity "Queuing call handlers information..." -status "Queued: $ProgressCount of $($CallHandlers.Count)" -percentComplete (($ProgressCount / $CallHandlers.Count) * 100)
     }
-    
+
     Write-Output "Processing $($PendingJobs.Count) call handler jobs with max $MaxConcurrentJobs concurrent..."
     Invoke-GetOnUnityWithLimit $PendingJobs | Out-Null
+
+    # After all jobs are done, load greetings and export audio
+    foreach ($CallHandler in $CallHandlers) {
+        $IsPrimary = [System.Convert]::ToBoolean($CallHandler.IsPrimary)
+        if ($IsPrimary -eq $false) {
+            $FolderName = "callhandlers/" + $CallHandler.ObjectId
+            $GreetingsPath = "output-unity/" + $FolderName + "/greetings.json"
+            if (Test-Path $GreetingsPath) {
+                $Greetings = Get-Content $GreetingsPath | ConvertFrom-Json
+                Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
+            } else {
+                Write-Warning "Greetings file not found for call handler $($CallHandler.ObjectId) at $GreetingsPath"
+            }
+        }
+    }
     Write-Output "Finished getting call handlers"
 }
 
