@@ -182,20 +182,23 @@ function Export-Greetings {
         [string]$CallHandlerId,
         [string]$FolderName
     ) 
-    foreach ($Greeting in $Greetings) {
 
+    $PendingJobs = @()
+    foreach ($Greeting in $Greetings) {
         $PlayWhat = [int]$Greeting.PlayWhat
         $Enabled = [System.Convert]::ToBoolean($Greeting.Enabled)
-
         if ($PlayWhat -eq 1 -and $Enabled -eq $true) {
-            $JobSpec = Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
-            $GreetingStreamFiles = Invoke-GetOnUnityWithLimit $JobSpec
+            $PendingJobs += Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
+        }
+    }
 
-            foreach ($GreetingStreamFile in $GreetingStreamFiles.Values) {
-                if ($null -ne $GreetingStreamFile) {
-                    $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
-                    Invoke-RestMethod -Uri $Url -Headers @{ "Accept" = "application/json" } -SkipCertificateCheck -Credential $Credential -OutFile ("output-unity/" + $FolderName + '/gr_' + $Greeting.GreetingType + "_" + $GreetingStreamFile.LanguageCode + ".wav")
-                }
+    $Results = Invoke-GetOnUnityWithLimit $PendingJobs
+
+    foreach ($Result in $Results.Values) {
+        foreach ($GreetingStreamFile in $Result) {
+            if ($null -ne $GreetingStreamFile) {
+                $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $GreetingStreamFile.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
+                Invoke-RestMethod -Uri $Url -Headers @{ "Accept" = "application/json" } -SkipCertificateCheck -Credential $Credential -OutFile ("output-unity/" + $FolderName + '/gr_' + $Greeting.GreetingType + "_" + $GreetingStreamFile.LanguageCode + ".wav")
             }
         }
     }
