@@ -167,7 +167,8 @@ function Export-CallHandlerGreetings {
                 $Greetings = Get-Content $GreetingsPath | ConvertFrom-Json
                 Export-Greetings $Greetings $CallHandler.ObjectId $FolderName
                 Write-Host ("Finished greetings export for CallHandler $($CallHandler.ObjectId)")
-            } else {
+            }
+            else {
                 Write-Warning "Greetings file not found for call handler $($CallHandler.ObjectId) at $GreetingsPath"
             }
         }
@@ -188,16 +189,13 @@ function Export-Greetings {
 
         if ($PlayWhat -eq 1 -and $Enabled -eq $true) {
             $JobSpec = Build-GetOnUnityJob $UnityHost ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles") $Credential $null 'GreetingStreamFile'
-            $GreetingStreamFiles = $JobSpec.ScriptBlock.Invoke($JobSpec.Arguments) | Where-Object { $_ }
+            $GreetingStreamFiles = Invoke-GetOnUnityWithLimit $JobSpec
 
-            foreach ($GreetingStreamFile in $GreetingStreamFiles) {
-                $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
-
-                $Headers = @{
-                    "Accept" = "application/json"
+            foreach ($GreetingStreamFile in $GreetingStreamFiles.Values) {
+                if ($null -ne $GreetingStreamFile) {
+                    $Url = $UnityHost + ('/vmrest/handlers/callhandlers/' + $CallHandlerId + "/greetings/" + $Greeting.GreetingType + "/greetingstreamfiles/" + $GreetingStreamFile.LanguageCode + "/audio")
+                    Invoke-RestMethod -Uri $Url -Headers @{ "Accept" = "application/json" } -SkipCertificateCheck -Credential $Credential -OutFile ("output-unity/" + $FolderName + '/gr_' + $Greeting.GreetingType + "_" + $GreetingStreamFile.LanguageCode + ".wav")
                 }
-
-                Invoke-RestMethod -Uri $Url -Headers $Headers -SkipCertificateCheck -Credential $Credential -OutFile ("output-unity/" + $FolderName + '/gr_' + $Greeting.GreetingType + "_" + $GreetingStreamFile.LanguageCode + ".wav")
             }
         }
     }
